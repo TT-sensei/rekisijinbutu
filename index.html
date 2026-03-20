@@ -78,9 +78,21 @@ body::before{
   flex-shrink:0;
   position:relative;z-index:10;
 }
+/* ホームボタン（タイトル画面以外で表示） */
+#home-btn{
+  display:none;
+  width:40px;height:40px;border-radius:12px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-size:1.15rem;cursor:pointer;
+  align-items:center;justify-content:center;flex-shrink:0;
+  transition:background .15s,transform .1s;
+}
+#home-btn.show{display:flex}
+#home-btn:active{background:var(--muted);transform:scale(.93)}
+/* 戻るボタン */
 #back-btn{
   display:none;
-  width:36px;height:36px;border-radius:10px;
+  width:40px;height:40px;border-radius:12px;
   background:var(--surface2);border:1px solid var(--border);
   color:var(--text);font-size:1rem;cursor:pointer;
   align-items:center;justify-content:center;flex-shrink:0;
@@ -88,23 +100,23 @@ body::before{
 }
 #back-btn.show{display:flex}
 #back-btn:active{background:var(--muted)}
+/* 称号エリア（れきし探偵団は非表示、称号を大きく） */
 #logo{
   font-family:var(--font-title);
   cursor:pointer;flex:1;
   display:flex;flex-direction:column;
   justify-content:center;
-  gap:1px;
+  gap:2px;
   min-width:0;
 }
-#logo-title{
-  font-size:1.05rem;font-weight:700;
-  color:var(--gold);letter-spacing:.05em;
+#logo-rank{
+  font-size:.98rem;font-weight:800;
+  color:var(--gold);letter-spacing:.04em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-#logo-rank{
-  font-size:.62rem;font-weight:700;
-  color:var(--subtext);letter-spacing:.04em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+#logo-lv{
+  font-size:.65rem;font-weight:700;
+  color:var(--subtext);letter-spacing:.06em;
 }
 #hud{
   display:flex;align-items:center;gap:10px;
@@ -358,6 +370,64 @@ body::before{
   font-size:1.2rem;color:var(--muted);
   align-self:center;
 }
+/* 時代カード内ランダムボタン */
+.era-random-btn{
+  grid-column:1/3;grid-row:5;
+  margin-top:10px;
+  padding:9px 16px;border-radius:30px;border:none;
+  background:linear-gradient(135deg,#2a1060,#1a0a40);
+  border:1.5px solid #5a3aaa;
+  color:#c0a0ff;font-size:.8rem;font-weight:800;
+  cursor:pointer;text-align:center;
+  transition:all .15s;
+  font-family:var(--font-body);
+  letter-spacing:.03em;
+}
+.era-random-btn:active{transform:scale(.97)}
+.era-random-btn:hover{background:linear-gradient(135deg,#3a1880,#200c50);border-color:#7a5acc}
+.era-random-btn.locked{
+  background:var(--bg2);border-color:var(--border);
+  color:var(--muted);cursor:default;
+}
+.era-random-btn.locked:hover{background:var(--bg2);transform:none}
+
+/* 全ミックスカード */
+#mix-card-area{margin-top:16px}
+.mix-card{
+  background:linear-gradient(135deg,#0a0a1a,#150a30);
+  border:2px solid #3a2060;
+  border-radius:var(--r-md);
+  padding:18px 20px;
+  cursor:pointer;
+  display:flex;align-items:center;gap:14px;
+  transition:border-color .15s,transform .12s,box-shadow .15s;
+  position:relative;overflow:hidden;
+}
+.mix-card::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 20% 50%,rgba(120,60,255,.08),transparent 60%);
+  pointer-events:none;
+}
+.mix-card:hover:not(.mix-locked){
+  border-color:#7a4aff;
+  transform:translateY(-2px);
+  box-shadow:0 6px 28px rgba(100,50,200,.25);
+}
+.mix-card:active:not(.mix-locked){transform:scale(.98)}
+.mix-card.mix-locked{cursor:default;opacity:.6}
+.mix-card-icon{font-size:2.4rem;flex-shrink:0}
+.mix-card-body{flex:1;min-width:0}
+.mix-card-title{font-size:1.05rem;font-weight:900;color:#c0a0ff;margin-bottom:2px}
+.mix-card-desc{font-size:.75rem;color:var(--subtext);line-height:1.6}
+.mix-card-badge{
+  font-size:.65rem;font-weight:800;
+  padding:3px 9px;border-radius:8px;
+  white-space:nowrap;flex-shrink:0;
+}
+.mix-badge-ok{background:#3a1880;color:#c0a0ff;border:1px solid #5a3aaa}
+.mix-badge-locked{background:var(--bg2);color:var(--muted);border:1px solid var(--border)}
+
 /* 人物アイコン列 */
 .era-people-icons{
   grid-column:1/3;grid-row:4;
@@ -845,23 +915,24 @@ body::before{
 
 <!-- HEADER -->
 <div id="header">
-  <button id="back-btn" onclick="goBack()">◀</button>
+  <button id="home-btn" onclick="goTitle()" title="ホームへ">🏠</button>
+  <button id="back-btn" onclick="goBack()" title="もどる">◀</button>
   <div id="logo" onclick="goTitle()">
-    <div id="logo-title">🔍 れきし探偵団</div>
     <div id="logo-rank">よみこみちゅう…</div>
+    <div id="logo-lv">Lv.1</div>
   </div>
   <div id="hud">
     <div id="combo-display"></div>
     <div class="hud-pill">
-      <span class="hud-lv" id="hud-level">Lv.1</span>
-      <div id="xp-bar-wrap" style="width:52px">
+      <div id="xp-bar-wrap" style="width:56px">
         <div id="xp-bar" style="width:0%"></div>
       </div>
+      <span class="hud-lv" id="hud-level" style="display:none"></span>
     </div>
     <div class="hud-pill">
       <span class="hud-ul" id="hud-unlocked">0/42</span>
     </div>
-    <button id="coll-btn" onclick="showCollection()">🏆 コレクション</button>
+    <button id="coll-btn" onclick="showCollection()">🏆</button>
   </div>
 </div>
 
@@ -892,6 +963,7 @@ body::before{
     <div class="screen-title">どの時代を学ぶ？</div>
     <div class="screen-sub">時代を選んで、学びたい人物を探そう</div>
     <div class="era-list" id="era-list"></div>
+    <div id="mix-card-area"></div>
   </div>
 
   <!-- ③ PEOPLE -->
@@ -1091,9 +1163,11 @@ function updateHUD(){
   document.getElementById('xp-bar').style.width=(xi/XP_PER_LEVEL*100)+'%';
   const ul=Object.values(save.people).filter(p=>p.unlocked).length;
   document.getElementById('hud-unlocked').textContent=`${ul}/42`;
-  // 称号をロゴ下に表示
+  // 称号・レベルをヘッダーに表示
   const rankEl=document.getElementById('logo-rank');
   if(rankEl) rankEl.textContent=getRank(lv);
+  const lvEl=document.getElementById('logo-lv');
+  if(lvEl) lvEl.textContent=`Lv.${lv}`;
 }
 function updateCombo(){
   const el=document.getElementById('combo-display');
@@ -1142,7 +1216,9 @@ function showScreen(id,push=true){
   next.classList.add('active');
   requestAnimationFrame(()=>next.classList.add('fade-in'));
   document.getElementById('main').scrollTop=0;
-  document.getElementById('back-btn').classList.toggle('show',id!=='title-screen');
+  const notTitle = id!=='title-screen';
+  document.getElementById('back-btn').classList.toggle('show', notTitle && id!=='era-screen');
+  document.getElementById('home-btn').classList.toggle('show', notTitle);
 }
 function goBack(){
   if(!screenStack.length){ goTitle(); return; }
@@ -1181,6 +1257,13 @@ function buildEraList(){
       return `<div class="${cls}" title="${p.name}">${p.emoji}</div>`;
     }).join('');
 
+    // 時代ランダムモード：その時代の人物を全員解放で解禁
+    const eraAllUnlocked = unlocked === people.length;
+    const randBtnCls = eraAllUnlocked ? 'era-random-btn' : 'era-random-btn locked';
+    const randBtnTxt = eraAllUnlocked
+      ? `🎲 ${era}時代ランダム`
+      : `🔒 全員解放でランダム解禁（あと${people.length-unlocked}人）`;
+
     card.innerHTML=`
       <div class="era-name">${era}時代</div>
       <div class="era-period">${ERA_PERIOD[era]||''}</div>
@@ -1190,10 +1273,58 @@ function buildEraList(){
       </div>
       <div class="era-people-icons">${iconsHTML}</div>
       <div class="era-arrow">›</div>
+      <button class="${randBtnCls}">${randBtnTxt}</button>
     `;
-    card.onclick=()=>showPeopleByEra(era);
+    // カードタップ→人物一覧、ランダムボタンタップ→ランダムクイズ
+    card.onclick=(e)=>{
+      if(e.target.classList.contains('era-random-btn')&&eraAllUnlocked){
+        startEraRandom(era);
+      } else if(!e.target.classList.contains('era-random-btn')){
+        showPeopleByEra(era);
+      }
+    };
     list.appendChild(card);
   });
+  // ミックスカード描画
+  buildMixCard();
+}
+
+// 全ミックスランダム
+function buildMixCard(){
+  const area = document.getElementById('mix-card-area');
+  if(!area) return;
+  const totalUnlocked = PEOPLE.filter(p=>personSave(p.id).unlocked).length;
+  const allUnlocked = totalUnlocked === PEOPLE.length;
+  const badgeCls = allUnlocked ? 'mix-card-badge mix-badge-ok' : 'mix-card-badge mix-badge-locked';
+  const badgeTxt = allUnlocked ? '✅ 解禁ずみ' : `🔒 全42人解放で解禁（${totalUnlocked}/42）`;
+
+  area.innerHTML=`
+    <div class="mix-card ${allUnlocked?'':'mix-locked'}" id="mix-card">
+      <div class="mix-card-icon">🌀</div>
+      <div class="mix-card-body">
+        <div class="mix-card-title">全時代ミックスランダム</div>
+        <div class="mix-card-desc">42人の中からランダムに出題！<br>上級者向けの完全ランダムモード</div>
+      </div>
+      <div class="${badgeCls}">${badgeTxt}</div>
+    </div>
+  `;
+  if(allUnlocked){
+    document.getElementById('mix-card').onclick = ()=>startMixRandom();
+  }
+}
+
+// 時代ランダムモード
+function startEraRandom(era){
+  const people = PEOPLE.filter(p=>p.era===era);
+  // ランダムに1人選んでクイズ開始
+  const p = people[Math.floor(Math.random()*people.length)];
+  startQuiz(p.id);
+}
+
+// 全ミックスランダム
+function startMixRandom(){
+  const p = PEOPLE[Math.floor(Math.random()*PEOPLE.length)];
+  startQuiz(p.id);
 }
 
 // ══════════════════════
