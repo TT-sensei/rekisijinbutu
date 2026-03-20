@@ -135,16 +135,33 @@ body::before{
    MAIN / SCREENS
 ═══════════════ */
 #main{
-  flex:1;overflow-y:auto;
+  flex:1;
   position:relative;z-index:1;
+  overflow:hidden;
 }
-#main::-webkit-scrollbar{width:4px}
-#main::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-.screen{display:none}
-.screen.active{display:block}
-.screen.active.fade-in{animation:fadeIn .22s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* 全画面共通: position:absolute で重ねて管理 */
+.screen{
+  display:none;
+  position:absolute;
+  inset:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  background:var(--bg);
+}
+.screen.active{
+  display:block;
+}
+.screen.active.fade-in{animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* 各画面のactive時display指定 */
+#title-screen.active  { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+#era-screen.active    { display:block; }
+#people-screen.active { display:block; }
+#result-screen.active { display:block; }
+#collection-screen.active { display:block; }
+#quiz-screen.active   { display:flex; flex-direction:column; overflow:hidden; }
 
 /* ═══════════════════════════════════════════
    1. TITLE SCREEN
@@ -156,6 +173,10 @@ body::before{
   padding:32px 20px 60px;
   text-align:center;
   gap:0;
+}
+/* active時はflexで中央揃え */
+#title-screen.active{
+  display:flex;
 }
 
 /* 紋章エリア */
@@ -394,10 +415,11 @@ body::before{
 
 /* 状態別スタイル */
 .person-card.state-locked{
-  opacity:.65;
+  opacity:.8;
 }
 .person-card.state-locked .p-emoji{
-  filter:blur(3px) grayscale(1);
+  filter:blur(4px) grayscale(1);
+  opacity:.4;
 }
 .person-card.state-unlocked{
   border-color:#1e4a32;
@@ -408,16 +430,18 @@ body::before{
   box-shadow:0 0 16px rgba(240,180,41,.15);
 }
 
-.p-emoji{
-  font-size:2.2rem;
-  display:block;margin-bottom:2px;
-}
 .p-name{
   font-size:.88rem;font-weight:700;
   line-height:1.3;
+  margin-bottom:2px;
 }
 .p-kana{
-  font-size:.64rem;color:var(--subtext);
+  font-size:.62rem;color:var(--subtext);
+  margin-bottom:4px;
+}
+.p-emoji{
+  font-size:2.4rem;
+  display:block;
 }
 
 /* 理解度ゲージ */
@@ -444,31 +468,37 @@ body::before{
 }
 
 /* ═══════════════════════════════════════════
-   4. QUIZ SCREEN
+   4. QUIZ SCREEN — 1画面固定レイアウト
+   スクロールなし。高さを flex で分け合う
+   ※ display は #quiz-screen.active で制御
 ═══════════════════════════════════════════ */
 #quiz-screen{
-  padding:16px 16px 40px;
-  max-width:720px;margin:0 auto;
+  flex-direction:column;
+  overflow:hidden;
+  padding:12px 14px 14px;
+  max-width:600px;
+  width:100%;
+  margin:0 auto;
+  box-sizing:border-box;
 }
 
-/* クイズヘッダー */
+/* クイズヘッダー — 固定 */
 .quiz-header{
   display:flex;align-items:center;
   justify-content:space-between;
-  margin-bottom:16px;gap:8px;
+  margin-bottom:10px;gap:8px;
+  flex-shrink:0;
 }
 .quiz-who{
-  display:flex;align-items:center;gap:8px;
-  font-weight:900;
-  font-size:1.1rem;
-  color:var(--gold);
+  display:flex;align-items:center;gap:6px;
+  font-weight:900;font-size:1rem;color:var(--gold);
 }
-.quiz-who-emoji{font-size:1.4rem}
+.quiz-who-emoji{font-size:1.25rem}
 
 /* 進捗ドット */
-.quiz-dots{display:flex;gap:6px;align-items:center}
+.quiz-dots{display:flex;gap:5px;align-items:center}
 .qdot{
-  width:10px;height:10px;border-radius:50%;
+  width:9px;height:9px;border-radius:50%;
   background:var(--muted);border:1.5px solid var(--muted);
   transition:all .25s;
 }
@@ -477,42 +507,46 @@ body::before{
 .qdot.ng{background:var(--red);border-color:var(--red)}
 @keyframes dotPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
 
-/* 問題カード */
+/* 問題カード — 固定、縮まない */
 .q-card{
   background:var(--surface);
   border:1.5px solid var(--border);
   border-radius:var(--r-md);
-  padding:20px 18px 16px;
-  margin-bottom:12px;
+  padding:14px 16px 12px;
+  margin-bottom:10px;
+  flex-shrink:0;
   transition:border-color .25s,box-shadow .25s;
 }
-.q-card.flash-ok{border-color:var(--green);box-shadow:0 0 24px rgba(61,214,140,.2)}
-.q-card.flash-ng{border-color:var(--red);box-shadow:0 0 20px rgba(240,100,100,.18)}
+.q-card.flash-ok{border-color:var(--green);box-shadow:0 0 20px rgba(61,214,140,.2)}
+.q-card.flash-ng{border-color:var(--red);box-shadow:0 0 18px rgba(240,100,100,.18)}
 
 .q-num{
-  font-size:.68rem;color:var(--subtext);
-  font-weight:700;letter-spacing:.1em;
-  margin-bottom:10px;
+  font-size:.65rem;color:var(--subtext);
+  font-weight:700;letter-spacing:.1em;margin-bottom:8px;
 }
 .q-text{
-  font-size:1.05rem;font-weight:700;
-  line-height:1.8;
-  color:var(--text);
+  font-size:.97rem;font-weight:700;
+  line-height:1.75;color:var(--text);
 }
 
-/* 選択肢 */
-.choices{display:flex;flex-direction:column;gap:8px}
+/* 選択肢エリア — 残り高さをすべて使い、4択が均等配分 */
+.choices{
+  display:flex;flex-direction:column;
+  gap:7px;
+  flex:1;        /* 残り高さを占有 */
+  min-height:0;  /* flex縮小を許可 */
+}
 .choice{
   background:var(--surface);
   border:1.5px solid var(--border);
   border-radius:var(--r-sm);
-  padding:14px 16px;
+  padding:0 14px;
   text-align:left;cursor:pointer;
-  font-size:.95rem;font-weight:600;
-  color:var(--text);
+  font-size:.92rem;font-weight:600;color:var(--text);
   display:flex;align-items:center;gap:10px;
   transition:all .16s;
-  min-height:52px;
+  flex:1;         /* 4択が高さを均等に分け合う */
+  min-height:0;
 }
 .choice:hover:not(:disabled){
   border-color:var(--gold-dim);
@@ -522,58 +556,50 @@ body::before{
 .choice:disabled{cursor:default}
 
 .choice-ltr{
-  width:26px;height:26px;border-radius:7px;
+  width:24px;height:24px;border-radius:6px;
   background:var(--bg2);
   display:flex;align-items:center;justify-content:center;
-  font-size:.75rem;font-weight:900;
-  color:var(--subtext);
-  flex-shrink:0;
-  transition:all .16s;
+  font-size:.72rem;font-weight:900;color:var(--subtext);
+  flex-shrink:0;transition:all .16s;
 }
 
-.choice.ans-ok{
-  background:var(--green-bg);border-color:var(--green);
-  animation:choiceOk .35s ease;
-}
+.choice.ans-ok{background:var(--green-bg);border-color:var(--green);animation:choiceOk .35s ease}
 .choice.ans-ok .choice-ltr{background:var(--green);color:var(--bg)}
-.choice.ans-ng{
-  background:var(--red-bg);border-color:var(--red);
-  animation:choiceNg .3s ease;
-}
+.choice.ans-ng{background:var(--red-bg);border-color:var(--red);animation:choiceNg .3s ease}
 .choice.ans-ng .choice-ltr{background:var(--red);color:var(--bg)}
 @keyframes choiceOk{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
 @keyframes choiceNg{0%,100%{transform:translateX(0)}30%{transform:translateX(-5px)}70%{transform:translateX(5px)}}
 
-/* フィードバック */
+/* フィードバック — 固定、選択肢の下 */
+#feedback-area{flex-shrink:0}
 .fb-banner{
-  border-radius:10px;padding:11px 16px;
-  font-size:.92rem;font-weight:800;
-  text-align:center;
-  margin-bottom:10px;
-  animation:fbIn .22s ease;
+  border-radius:10px;padding:9px 14px;
+  font-size:.86rem;font-weight:800;
+  text-align:center;margin-top:8px;
+  animation:fbIn .2s ease;
 }
-@keyframes fbIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .fb-ok{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green)}
 .fb-ng{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red)}
 .fb-near{background:var(--yellow-bg);color:var(--gold);border:1.5px solid var(--gold-dim)}
 
-/* 次へボタン */
+/* 次へボタン — 固定下部 */
 #next-btn{
-  width:100%;margin-top:10px;
-  padding:15px;border-radius:40px;border:none;
+  width:100%;margin-top:8px;
+  padding:13px;border-radius:40px;border:none;
   background:linear-gradient(135deg,var(--orange),var(--gold));
-  color:var(--bg);font-size:1rem;font-weight:900;
+  color:var(--bg);font-size:.96rem;font-weight:900;
   cursor:pointer;letter-spacing:.04em;
   transition:transform .15s,box-shadow .15s;
-  display:none;
+  display:none;flex-shrink:0;
+  font-family:var(--font-body);
 }
 #next-btn:hover{box-shadow:0 4px 20px rgba(240,100,53,.4)}
 #next-btn:active{transform:scale(.98)}
 
 /* レビューバッジ */
 .quiz-mode-badge{
-  font-size:.68rem;font-weight:800;padding:3px 10px;
-  border-radius:10px;
+  font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:10px;
 }
 .quiz-mode-badge.review{background:#5a3200;color:#ffd080}
 .quiz-mode-badge.normal{display:none}
@@ -1110,7 +1136,7 @@ function buildEraList(){
     const iconsHTML=people.map(p=>{
       const ps=personSave(p.id);
       const cls=ps.unlocked?'era-p-icon unlocked':'era-p-icon locked';
-      return `<div class="${cls}" title="${ps.unlocked?p.name:'？？？'}">${p.emoji}</div>`;
+      return `<div class="${cls}" title="${p.name}">${p.emoji}</div>`;
     }).join('');
 
     card.innerHTML=`
@@ -1175,9 +1201,9 @@ function renderPeopleGrid(){
 
     card.innerHTML=`
       ${badge}
+      <div class="p-name">${p.name}</div>
+      <div class="p-kana">${p.kana}</div>
       <span class="p-emoji">${p.emoji}</span>
-      <div class="p-name">${ps.unlocked?p.name:'？？？？'}</div>
-      <div class="p-kana">${ps.unlocked?p.kana:''}</div>
       ${gaugeHTML}
       ${lockEl}
     `;
