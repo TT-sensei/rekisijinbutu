@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>れきし探偵団</title>
+<script src="people.js"></script>
+<script src="questions.js"></script>
+<style>
+  :root {
+    --bg:      #12131a;
+    --surface: #1c1e2b;
+    --card:    #252840;
+    --accent:  #e8504a;
+    --gold:    #f0b429;
+    --text:    #eef2ff;
+    --subtext: #7a86a0;
+    --green:   #4ade80;
+    --red:     #f87171;
+    --shadow:  0 4px 24px rgba(0,0,0,.5);
+    --radius:  16px;
+    /* タブレット向けスケール変数 */
+    --fs-base:  1rem;
+    --fs-sm:    .82rem;
+    --fs-xs:    .72rem;
+    --pad-main: 20px 24px 40px;
+  }
+
+  /* ── タブレット（768px〜）でスケールアップ ── */
+  @media(min-width:768px){
+    :root{
+      --fs-base:  1.08rem;
+      --fs-sm:    .9rem;
+      --fs-xs:    .78rem;
+      --pad-main: 24px 36px 48px;
+    }
+  }
+  @media(min-width:1024px){
+    :root{
+      --fs-base:  1.12rem;
+      --fs-sm:    .95rem;
+      --fs-xs:    .82rem;
+      --pad-main: 28px 48px 56px;
+    }
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{height:100%}
+  body{
+    height:100%;
+    font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+    background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;
+    user-select:none;touch-action:manipulation;
+    overflow:hidden;
+  }
+
+  /* ══ HEADER ══ */
+  #header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px;
+    background:var(--surface);
+    border-bottom:2px solid var(--card);
+    flex-shrink:0;
+  }
+  @media(min-width:768px){#header{padding:16px 36px}}
+  #header h1{
+    font-size:1.3rem;font-weight:900;letter-spacing:.05em;
+    color:var(--gold);cursor:pointer;white-space:nowrap;
+  }
+  @media(min-width:768px){#header h1{font-size:1.5rem}}
+  #hud{display:flex;gap:20px;align-items:center}
+  @media(min-width:768px){#hud{gap:28px}}
+  .hud-item{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+  .hud-label{font-size:.6rem;color:var(--subtext);letter-spacing:.08em}
+  @media(min-width:768px){.hud-label{font-size:.68rem}}
+  .hud-val{font-size:.95rem;font-weight:800;color:var(--text)}
+  @media(min-width:768px){.hud-val{font-size:1.05rem}}
+  #xp-bar-wrap{
+    width:100px;height:7px;background:#2a2a4a;
+    border-radius:4px;overflow:hidden;margin-top:4px;
+  }
+  @media(min-width:768px){#xp-bar-wrap{width:130px;height:8px}}
+  #xp-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:4px;transition:width .4s}
+
+  /* ══ MAIN ══ */
+  #main{flex:1;overflow-y:auto;padding:var(--pad-main)}
+  #main::-webkit-scrollbar{width:5px}
+  #main::-webkit-scrollbar-thumb{background:var(--card);border-radius:3px}
+
+  .screen{display:none}
+  .screen.active{display:block}
+
+  /* ══════════════════════════════════════
+     TITLE SCREEN
+  ══════════════════════════════════════ */
+  #title-screen{
+    max-width:1100px;margin:0 auto;
+    display:flex;flex-direction:column;align-items:center;
+    gap:24px;
+  }
+
+  /* タブレット横: 左右2カラム */
+  .title-layout{
+    display:flex;flex-direction:column;gap:24px;width:100%;
+  }
+  @media(min-width:800px){
+    .title-layout{
+      flex-direction:row;align-items:flex-start;gap:32px;
+    }
+  }
+
+  .title-hero{
+    text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    flex-shrink:0;
+  }
+  @media(min-width:800px){.title-hero{min-width:260px;max-width:300px;padding-top:8px}}
+  .title-hero-icon{font-size:4rem}
+  @media(min-width:768px){.title-hero-icon{font-size:5rem}}
+  .title-hero h2{
+    font-size:2.2rem;font-weight:900;color:var(--gold);
+    text-shadow:0 0 32px rgba(240,180,41,.35);
+    line-height:1.2;
+  }
+  @media(min-width:768px){.title-hero h2{font-size:2.8rem}}
+  .title-hero p{font-size:var(--fs-sm);color:var(--subtext);line-height:1.9}
+  .title-hero-btns{display:flex;flex-direction:column;gap:10px;width:100%}
+  @media(min-width:800px){.title-hero-btns{width:auto}}
+
+  /* ── 時代一覧パネル ── */
+  .era-overview{
+    flex:1;
+    background:var(--surface);
+    border-radius:var(--radius);border:2px solid var(--card);
+    overflow:hidden;
+  }
+  .era-overview-head{
+    font-size:var(--fs-xs);font-weight:900;letter-spacing:.12em;
+    color:var(--subtext);padding:14px 20px 10px;
+    border-bottom:1px solid var(--card);
+  }
+  .era-list{display:flex;flex-direction:column}
+  .era-row{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:11px 18px;border-bottom:1px solid var(--card);
+    cursor:pointer;transition:background .15s;
+    min-height:44px;
+  }
+  .era-row:last-child{border-bottom:none}
+  .era-row:hover,.era-row:active{background:rgba(255,255,255,.05)}
+  .era-tag{
+    flex-shrink:0;
+    font-size:.68rem;font-weight:800;
+    padding:3px 9px;border-radius:10px;
+    background:var(--card);color:var(--gold);
+    margin-top:2px;white-space:nowrap;
+  }
+  @media(min-width:768px){.era-tag{font-size:.74rem;padding:4px 11px}}
+  .era-names{font-size:var(--fs-sm);color:var(--subtext);line-height:1.7}
+  .era-names strong{color:var(--text);font-weight:700}
+
+  /* ── ボタン ── */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:14px 36px;border-radius:40px;border:none;cursor:pointer;
+    font-size:var(--fs-base);font-weight:800;letter-spacing:.04em;
+    transition:transform .15s,box-shadow .15s;
+    min-height:48px;
+  }
+  @media(min-width:768px){.btn{padding:16px 44px;min-height:54px}}
+  .btn:active{transform:scale(.96)}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),#c0392b);
+    color:#fff;box-shadow:0 4px 20px rgba(232,80,74,.4);
+  }
+  .btn-primary:hover{box-shadow:0 6px 28px rgba(232,80,74,.6)}
+  .btn-secondary{background:var(--card);color:var(--text);border:1px solid #353860}
+  #daily-status{font-size:var(--fs-xs);color:var(--subtext);text-align:center}
+
+  /* ══════════════════════════════════════
+     PEOPLE SCREEN
+  ══════════════════════════════════════ */
+  #people-screen h2{
+    font-size:1.2rem;font-weight:900;margin-bottom:14px;color:var(--gold);
+  }
+  @media(min-width:768px){#people-screen h2{font-size:1.4rem;margin-bottom:18px}}
+
+  .era-filter{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .era-btn{
+    padding:8px 16px;border-radius:20px;border:1.5px solid var(--card);
+    background:transparent;color:var(--subtext);cursor:pointer;
+    font-size:var(--fs-sm);font-weight:700;transition:all .15s;
+    min-height:40px;
+  }
+  @media(min-width:768px){.era-btn{padding:9px 20px;min-height:44px}}
+  .era-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .people-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+    gap:10px;
+  }
+  @media(min-width:600px){.people-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}
+  @media(min-width:768px){.people-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}}
+  @media(min-width:1024px){.people-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}}
+
+  .person-card{
+    background:var(--surface);border-radius:var(--radius);
+    border:2px solid var(--card);
+    padding:16px 12px;text-align:center;cursor:pointer;
+    transition:transform .15s,border-color .15s,box-shadow .15s;
+    position:relative;overflow:hidden;
+    min-height:130px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  @media(min-width:768px){.person-card{padding:20px 14px;min-height:150px}}
+  .person-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
+  .person-card:active{transform:scale(.97)}
+  .person-card.locked .person-emoji{filter:blur(4px) grayscale(1);opacity:.3}
+  .person-card.locked .person-name{color:var(--subtext)}
+  .person-card.unlocked{border-color:#2a5040}
+  .person-card.mastered{border-color:var(--gold);box-shadow:0 0 14px rgba(240,180,41,.25)}
+  .person-emoji{font-size:2.5rem;margin-bottom:6px;display:block}
+  @media(min-width:768px){.person-emoji{font-size:3rem;margin-bottom:8px}}
+  .person-name{font-size:.9rem;font-weight:800;margin-bottom:3px}
+  @media(min-width:768px){.person-name{font-size:1rem}}
+  .person-kana{font-size:.68rem;color:var(--subtext)}
+  @media(min-width:768px){.person-kana{font-size:.74rem}}
+  .person-era-tag{
+    display:inline-block;font-size:.62rem;font-weight:700;
+    padding:2px 8px;border-radius:8px;background:var(--card);color:var(--subtext);
+    margin-top:6px;
+  }
+  @media(min-width:768px){.person-era-tag{font-size:.68rem}}
+  .clear-badge{
+    position:absolute;top:8px;right:8px;
+    background:var(--gold);color:#12131a;
+    font-size:.62rem;font-weight:900;padding:3px 7px;border-radius:8px;
+  }
+  .lock-overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:1.8rem;
+  }
+
+  /* ══════════════════════════════════════
+     QUIZ SCREEN
+  ══════════════════════════════════════ */
+  #quiz-screen{max-width:860px;margin:0 auto}
+
+  .quiz-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:18px;
+  }
+  @media(min-width:768px){.quiz-header{margin-bottom:24px}}
+  .quiz-person{
+    font-size:1.1rem;font-weight:900;color:var(--gold);
+    display:flex;align-items:center;gap:8px;
+  }
+  @media(min-width:768px){.quiz-person{font-size:1.3rem;gap:10px}}
+  .quiz-progress{display:flex;gap:8px;align-items:center}
+  .prog-dot{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--card);border:2px solid var(--card);transition:all .3s;
+  }
+  @media(min-width:768px){.prog-dot{width:16px;height:16px}}
+  .prog-dot.done-correct{background:var(--green);border-color:var(--green)}
+  .prog-dot.done-wrong{background:var(--red);border-color:var(--red)}
+  .prog-dot.current{background:var(--accent);border-color:var(--accent);animation:pulse .8s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+
+  /* タブレット: クイズを左右2カラム */
+  .quiz-layout{display:flex;flex-direction:column;gap:0}
+  @media(min-width:768px){
+    .quiz-layout{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-rows:auto auto;
+      gap:0 20px;
+      align-items:start;
+    }
+    .question-card{grid-column:1;grid-row:1}
+    #feedback-area{grid-column:1;grid-row:2}
+    .choices{grid-column:2;grid-row:1 / span 2}
+    #next-btn{grid-column:1 / span 2}
+  }
+
+  .question-card{
+    background:var(--surface);border-radius:var(--radius);border:2px solid var(--card);
+    padding:24px 22px;margin-bottom:18px;
+  }
+  @media(min-width:768px){.question-card{padding:28px 26px;margin-bottom:16px}}
+  .question-num{
+    font-size:var(--fs-xs);color:var(--subtext);font-weight:700;
+    letter-spacing:.1em;margin-bottom:10px;
+  }
+  .question-text{
+    font-size:1.1rem;font-weight:700;line-height:1.8;
+  }
+  @media(min-width:768px){.question-text{font-size:1.25rem;line-height:1.85}}
+
+  .choices{display:flex;flex-direction:column;gap:10px}
+  @media(min-width:768px){.choices{gap:12px}}
+
+  .choice-btn{
+    background:var(--card);border:2px solid transparent;border-radius:14px;
+    padding:16px 18px;text-align:left;cursor:pointer;
+    font-size:var(--fs-base);font-weight:600;color:var(--text);
+    transition:all .18s;display:flex;align-items:center;gap:12px;
+    min-height:56px;
+  }
+  @media(min-width:768px){.choice-btn{padding:18px 22px;min-height:64px;font-size:1.05rem}}
+  .choice-btn:hover:not(:disabled){border-color:var(--accent);background:#1e2450}
+  .choice-btn:active:not(:disabled){transform:scale(.98)}
+  .choice-btn:disabled{cursor:default}
+  .choice-btn.correct{background:#1a4a2a;border-color:var(--green);color:var(--green)}
+  .choice-btn.wrong{background:#4a1a1a;border-color:var(--red);color:var(--red)}
+  .choice-letter{
+    width:30px;height:30px;border-radius:50%;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;font-weight:900;flex-shrink:0;
+  }
+  @media(min-width:768px){.choice-letter{width:34px;height:34px;font-size:.9rem}}
+
+  .feedback-banner{
+    border-radius:12px;padding:14px 20px;margin-bottom:16px;
+    font-size:var(--fs-base);font-weight:800;text-align:center;
+  }
+  @media(min-width:768px){.feedback-banner{padding:16px 22px;font-size:1.05rem}}
+  .feedback-banner.correct{background:#1a4a2a;color:var(--green);border:2px solid var(--green)}
+  .feedback-banner.wrong{background:#4a1a1a;color:var(--red);border:2px solid var(--red)}
+  .feedback-banner.near-miss{background:#3a3a1a;color:var(--gold);border:2px solid var(--gold)}
+  #next-btn{width:100%;margin-top:12px}
+
+  /* ══════════════════════════════════════
+     RESULT SCREEN
+  ══════════════════════════════════════ */
+  #result-screen{
+    max-width:680px;margin:0 auto;text-align:center;padding:10px 0 48px;
+  }
+  .result-hero{font-size:5rem;margin-bottom:10px}
+  @media(min-width:768px){.result-hero{font-size:6rem}}
+  .result-title{font-size:1.6rem;font-weight:900;margin-bottom:4px}
+  @media(min-width:768px){.result-title{font-size:2rem}}
+  .result-sub{font-size:var(--fs-sm);color:var(--subtext);margin-bottom:24px}
+  .result-stats{display:flex;justify-content:center;gap:16px;margin-bottom:24px}
+  @media(min-width:768px){.result-stats{gap:24px;margin-bottom:32px}}
+  .stat-box{
+    background:var(--surface);border-radius:var(--radius);border:2px solid var(--card);
+    padding:18px 24px;min-width:110px;
+  }
+  @media(min-width:768px){.stat-box{padding:22px 32px;min-width:130px}}
+  .stat-val{font-size:2rem;font-weight:900;color:var(--gold)}
+  @media(min-width:768px){.stat-val{font-size:2.4rem}}
+  .stat-label{font-size:var(--fs-xs);color:var(--subtext)}
+  .unlock-banner{
+    background:linear-gradient(135deg,#1e4a1e,#122e12);
+    border:2px solid var(--green);border-radius:var(--radius);
+    padding:20px;margin-bottom:24px;
+  }
+  @media(min-width:768px){.unlock-banner{padding:26px}}
+  .unlock-banner h3{color:var(--green);font-size:1.2rem;margin-bottom:4px}
+  @media(min-width:768px){.unlock-banner h3{font-size:1.4rem}}
+  .unlock-banner p{color:var(--text);font-size:var(--fs-base)}
+  .near-miss-banner{
+    background:#3a3a1a;border:2px solid var(--gold);border-radius:var(--radius);
+    padding:16px;margin-bottom:20px;color:var(--gold);font-weight:700;
+    font-size:var(--fs-base);
+  }
+  .result-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  /* ══ TOAST ══ */
+  #toast{
+    position:fixed;bottom:32px;left:50%;
+    transform:translateX(-50%) translateY(70px);
+    background:var(--gold);color:#12131a;
+    padding:12px 28px;border-radius:40px;
+    font-weight:900;font-size:var(--fs-base);
+    pointer-events:none;transition:transform .35s,opacity .35s;
+    opacity:0;z-index:100;white-space:nowrap;
+  }
+  @media(min-width:768px){#toast{padding:14px 36px;font-size:1.05rem}}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  /* ══ XP POPUP ══ */
+  .xp-popup{
+    position:fixed;font-size:1.1rem;font-weight:900;color:var(--gold);
+    pointer-events:none;z-index:200;
+    right:28px;top:68px;
+    animation:floatUp 1s forwards;
+  }
+  @media(min-width:768px){.xp-popup{font-size:1.3rem;right:40px;top:76px}}
+  @keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1 onclick="showTitle()">🔍 れきし探偵団</h1>
+  <div id="hud">
+    <div class="hud-item">
+      <span class="hud-label">LEVEL</span>
+      <span class="hud-val" id="hud-level">Lv.1</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">XP</span>
+      <div id="xp-bar-wrap"><div id="xp-bar" style="width:0%"></div></div>
+      <span class="hud-val" id="hud-xp" style="font-size:.72rem">0/100</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">解放</span>
+      <span class="hud-val" id="hud-unlocked">0/42</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- ══ TITLE ══ -->
+  <div id="title-screen" class="screen active">
+    <div class="title-layout">
+      <!-- 左: ヒーロー＋ボタン -->
+      <div class="title-hero">
+        <div class="title-hero-icon">🏯</div>
+        <h2>れきし<br>探偵団</h2>
+        <p>歴史上の人物42人を<br>クイズで調べて<br>シルエットを解放しよう！</p>
+        <div class="title-hero-btns">
+          <button class="btn btn-primary" onclick="showPeople()">▶ はじめる</button>
+        </div>
+        <p id="daily-status"></p>
+      </div>
+      <!-- 右: 時代一覧 -->
+      <div class="era-overview">
+        <div class="era-overview-head">📅 登場する時代と人物</div>
+        <div class="era-list" id="era-overview-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PEOPLE ══ -->
+  <div id="people-screen" class="screen">
+    <h2>🕵️ 人物を選ぼう</h2>
+    <div class="era-filter" id="era-filter"></div>
+    <div class="people-grid" id="people-grid"></div>
+  </div>
+
+  <!-- ══ QUIZ ══ -->
+  <div id="quiz-screen" class="screen">
+    <div class="quiz-header">
+      <div class="quiz-person">
+        <span id="quiz-emoji"></span>
+        <span id="quiz-person-name"></span>
+      </div>
+      <div class="quiz-progress" id="quiz-progress"></div>
+    </div>
+    <div class="quiz-layout">
+      <div class="question-card">
+        <div class="question-num" id="q-num"></div>
+        <div class="question-text" id="q-text"></div>
+      </div>
+      <div id="feedback-area"></div>
+      <div class="choices" id="choices"></div>
+      <button class="btn btn-primary" id="next-btn" style="display:none" onclick="nextQuestion()">つぎへ →</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULT ══ -->
+  <div id="result-screen" class="screen">
+    <div class="result-hero" id="result-emoji"></div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <div class="result-stats">
+      <div class="stat-box"><div class="stat-val" id="res-correct"></div><div class="stat-label">せいかい</div></div>
+      <div class="stat-box"><div class="stat-val" id="res-xp"></div><div class="stat-label">かくとく XP</div></div>
+      <div class="stat-box"><div class="stat-val" id="res-clear"></div><div class="stat-label">クリア回数</div></div>
+    </div>
+    <div id="unlock-area"></div>
+    <div class="result-btns">
+      <button class="btn btn-primary" onclick="playAgain()">もう一度</button>
+      <button class="btn btn-secondary" onclick="showPeople()">人物を変える</button>
+      <button class="btn btn-secondary" onclick="showTitle()">トップへ</button>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  SAVE / LOAD
+// ══════════════════════════════════════════
+const SAVE_KEY = 'rekiDanSave_v2';
+const XP_PER_LEVEL = 100;
+const CORRECT_XP   = 10;
+const PERFECT_BONUS = 30;
+const DAILY_XP     = 50;
+const STREAK_BONUS  = 30;
+
+let save = loadSave();
+
+function defaultSave(){
+  return { xp:0, level:1, people:{}, lastLogin:null, streak:0 };
+}
+function loadSave(){
+  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); return s||defaultSave(); }
+  catch(e){ return defaultSave(); }
+}
+function persist(){ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }
+function personSave(id){
+  if(!save.people[id]) save.people[id]={cleared:0,unlocked:false};
+  return save.people[id];
+}
+
+// ══════════════════════════════════════════
+//  XP / LEVEL
+// ══════════════════════════════════════════
+function addXP(amount){
+  save.xp += amount;
+  const newLevel = Math.floor(save.xp/XP_PER_LEVEL)+1;
+  if(newLevel > save.level){
+    save.level = newLevel;
+    showToast(`🎉 レベルアップ！ Lv.${save.level} になった！`);
+  }
+  persist();
+  updateHUD();
+  showXPPopup(amount);
+}
+
+function updateHUD(){
+  document.getElementById('hud-level').textContent = `Lv.${save.level}`;
+  const xpIn = save.xp % XP_PER_LEVEL;
+  document.getElementById('hud-xp').textContent = `${xpIn}/${XP_PER_LEVEL}`;
+  document.getElementById('xp-bar').style.width = (xpIn/XP_PER_LEVEL*100)+'%';
+  const unlocked = Object.values(save.people).filter(p=>p.unlocked).length;
+  document.getElementById('hud-unlocked').textContent = `${unlocked}/42`;
+}
+
+// ══════════════════════════════════════════
+//  DAILY LOGIN
+// ══════════════════════════════════════════
+function checkDaily(){
+  const today = new Date().toDateString();
+  const el = document.getElementById('daily-status');
+  if(save.lastLogin === today){
+    el.textContent = `✅ 今日のボーナスは受け取り済み　ストリーク：${save.streak}日`;
+    return;
+  }
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  save.streak = (save.lastLogin===yesterday) ? (save.streak||0)+1 : 1;
+  save.lastLogin = today;
+  let bonus = DAILY_XP;
+  let msg = `🎁 ログインボーナス +${DAILY_XP}XP！`;
+  if(save.streak>=3){ bonus+=STREAK_BONUS; msg=`🔥 ${save.streak}日連続！ +${DAILY_XP+STREAK_BONUS}XP！`; }
+  addXP(bonus);
+  persist();
+  showToast(msg);
+  el.textContent = `✅ ボーナスをもらった！　ストリーク：${save.streak}日`;
+}
+
+// ══════════════════════════════════════════
+//  SCREENS
+// ══════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+}
+
+// ══════════════════════════════════════════
+//  TITLE SCREEN
+// ══════════════════════════════════════════
+function buildEraOverview(){
+  // 時代順に人物をまとめる
+  const eraOrder = ['古代','奈良','平安','鎌倉','室町','安土桃山','江戸','江戸末期','明治'];
+  const eraMap = {};
+  eraOrder.forEach(e=>{ eraMap[e]=[]; });
+  PEOPLE.forEach(p=>{ if(eraMap[p.era]) eraMap[p.era].push(p); });
+
+  const container = document.getElementById('era-overview-list');
+  container.innerHTML = '';
+  eraOrder.forEach(era=>{
+    const people = eraMap[era];
+    if(!people.length) return;
+    const row = document.createElement('div');
+    row.className = 'era-row';
+    row.onclick = ()=>{ currentEraFilter=era; showPeople(); };
+    row.title = `${era}時代の人物を見る`;
+    const names = people.map(p=>{
+      const ps = personSave(p.id);
+      return ps.unlocked ? `<strong>${p.name}</strong>` : '？？？';
+    }).join('・');
+    row.innerHTML = `
+      <span class="era-tag">${era}</span>
+      <div class="era-names">${names}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function showTitle(){
+  buildEraOverview();
+  checkDaily();
+  showScreen('title-screen');
+}
+
+// ══════════════════════════════════════════
+//  PEOPLE SCREEN
+// ══════════════════════════════════════════
+let currentEraFilter = 'すべて';
+
+function showPeople(){
+  buildPeopleGrid();
+  showScreen('people-screen');
+}
+
+function buildPeopleGrid(){
+  const eraOrder = ['すべて','古代','奈良','平安','鎌倉','室町','安土桃山','江戸','江戸末期','明治'];
+  const filterEl = document.getElementById('era-filter');
+  filterEl.innerHTML = '';
+  eraOrder.forEach(era=>{
+    const btn = document.createElement('button');
+    btn.className = 'era-btn'+(era===currentEraFilter?' active':'');
+    btn.textContent = era;
+    btn.onclick = ()=>{ currentEraFilter=era; buildPeopleGrid(); };
+    filterEl.appendChild(btn);
+  });
+
+  const grid = document.getElementById('people-grid');
+  grid.innerHTML = '';
+  const filtered = currentEraFilter==='すべて'
+    ? PEOPLE
+    : PEOPLE.filter(p=>p.era===currentEraFilter);
+
+  filtered.forEach(p=>{
+    const ps = personSave(p.id);
+    const cnt = ps.cleared;
+    let cls = 'person-card';
+    if(!ps.unlocked) cls += ' locked';
+    else if(cnt>=5) cls += ' mastered';
+    else cls += ' unlocked';
+
+    const card = document.createElement('div');
+    card.className = cls;
+    if(cnt>=5) card.style.background='linear-gradient(135deg,#243010,#182008)';
+    else if(cnt>=3) card.style.background='linear-gradient(135deg,#0e2440,#081830)';
+
+    card.innerHTML = `
+      <span class="person-emoji">${p.emoji}</span>
+      <div class="person-name">${ps.unlocked?p.name:'？？？？'}</div>
+      <div class="person-kana">${ps.unlocked?p.kana:'\u3000'}</div>
+      <span class="person-era-tag">${p.era}</span>
+      ${cnt>0?`<div class="clear-badge">${cnt}回</div>`:''}
+      ${!ps.unlocked?`<div class="lock-overlay">🔒</div>`:''}
+    `;
+    card.onclick = ()=> startQuiz(p.id);
+    grid.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════
+//  QUIZ
+// ══════════════════════════════════════════
+let quizState = {};
+
+function startQuiz(personId){
+  const person = PEOPLE.find(p=>p.id===personId);
+  const pool = QUESTIONS.filter(q=>q.personId===personId);
+  const questions = [...pool].sort(()=>Math.random()-.5).slice(0,Math.min(5,pool.length));
+  quizState = { personId, person, questions, current:0, results:[], earnedXP:0, answered:false };
+  document.getElementById('quiz-emoji').textContent = person.emoji;
+  document.getElementById('quiz-person-name').textContent = person.name;
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const {questions,current,results} = quizState;
+  const q = questions[current];
+
+  const progEl = document.getElementById('quiz-progress');
+  progEl.innerHTML = '';
+  questions.forEach((_,i)=>{
+    const dot = document.createElement('div');
+    let cls='prog-dot';
+    if(i<current) cls += results[i]?' done-correct':' done-wrong';
+    else if(i===current) cls += ' current';
+    dot.className=cls;
+    progEl.appendChild(dot);
+  });
+
+  document.getElementById('q-num').textContent = `第${current+1}問 / 全${questions.length}問`;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('feedback-area').innerHTML = '';
+  document.getElementById('next-btn').style.display = 'none';
+  quizState.answered = false;
+
+  const letters = ['Ａ','Ｂ','Ｃ','Ｄ'];
+  const indexed = q.choices.map((c,i)=>({text:c,original:i})).sort(()=>Math.random()-.5);
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  indexed.forEach((item,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-letter">${letters[i]}</span>${item.text}`;
+    btn.onclick = ()=> answer(item.original===q.answer, btn, indexed, q.answer, choicesEl);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function answer(correct, clickedBtn, indexed, correctOriginal, choicesEl){
+  if(quizState.answered) return;
+  quizState.answered = true;
+  quizState.results.push(correct);
+
+  choicesEl.querySelectorAll('.choice-btn').forEach((btn,i)=>{
+    btn.disabled = true;
+    if(indexed[i].original===correctOriginal) btn.classList.add('correct');
+  });
+  if(!correct) clickedBtn.classList.add('wrong');
+
+  if(correct){ quizState.earnedXP += CORRECT_XP; addXP(CORRECT_XP); }
+
+  const isLast = quizState.current === quizState.questions.length-1;
+  const soFarCorrect = quizState.results.filter(Boolean).length;
+  const fb = document.createElement('div');
+
+  if(correct){
+    fb.className='feedback-banner correct';
+    fb.textContent=`⭕ 正解！ +${CORRECT_XP}XP`;
+  } else {
+    const nearPerfect = soFarCorrect===quizState.questions.length-1 && isLast;
+    if(nearPerfect){
+      fb.className='feedback-banner near-miss';
+      fb.textContent='😣 おしい！あと1問で全問正解だった！';
+    } else {
+      fb.className='feedback-banner wrong';
+      fb.textContent='❌ 不正解…';
+    }
+  }
+  document.getElementById('feedback-area').appendChild(fb);
+  document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('next-btn').textContent = isLast ? '結果を見る 🏁' : 'つぎへ →';
+}
+
+function nextQuestion(){
+  quizState.current++;
+  if(quizState.current >= quizState.questions.length) showResult();
+  else renderQuestion();
+}
+
+// ══════════════════════════════════════════
+//  RESULT
+// ══════════════════════════════════════════
+function showResult(){
+  const {personId,person,questions,results,earnedXP} = quizState;
+  const correct = results.filter(Boolean).length;
+  const perfect = correct===questions.length;
+  const ps = personSave(personId);
+  let totalXP = earnedXP;
+  let bonusMsg = '';
+
+  if(perfect){
+    totalXP += PERFECT_BONUS;
+    addXP(PERFECT_BONUS);
+    bonusMsg = `🌟 全問正解ボーナス +${PERFECT_BONUS}XP！`;
+    const wasUnlocked = ps.unlocked;
+    ps.cleared++;
+    ps.unlocked = true;
+    persist();
+
+    const unlockEl = document.getElementById('unlock-area');
+    if(!wasUnlocked){
+      unlockEl.innerHTML=`<div class="unlock-banner"><h3>🔓 解放！</h3><p>${person.emoji} <strong>${person.name}</strong> を解放した！</p></div>`;
+    } else {
+      const cnt=ps.cleared;
+      const extra = cnt===3?'✨ 背景が変わった！':cnt===5?'🏆 マスター達成！':'';
+      unlockEl.innerHTML=`<div class="unlock-banner"><h3>🌟 クリア！</h3><p>${person.emoji} <strong>${person.name}</strong> クリア${cnt}回目！ ${extra}</p></div>`;
+    }
+  } else {
+    persist();
+    const near = correct===questions.length-1 && !ps.unlocked;
+    const unlockEl = document.getElementById('unlock-area');
+    unlockEl.innerHTML = near
+      ? `<div class="near-miss-banner">😣 おしい！あと1問で解放できた！次がんばろう！</div>`
+      : '';
+  }
+
+  document.getElementById('result-emoji').textContent = correct===5?'🏆':correct>=3?'⭐':'📖';
+  document.getElementById('result-title').textContent = correct===5?'全問正解！！':correct>=3?'よくできました！':'もう一度挑戦！';
+  document.getElementById('result-sub').textContent = bonusMsg || `${correct}/${questions.length} 正解`;
+  document.getElementById('res-correct').textContent = `${correct}/${questions.length}`;
+  document.getElementById('res-xp').textContent = `+${totalXP}`;
+  document.getElementById('res-clear').textContent = `${ps.cleared}回`;
+
+  showScreen('result-screen');
+}
+
+function playAgain(){ startQuiz(quizState.personId); }
+
+// ══════════════════════════════════════════
+//  TOAST / POPUP
+// ══════════════════════════════════════════
+let toastTimer;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+function showXPPopup(amount){
+  const el=document.createElement('div');
+  el.className='xp-popup';
+  el.textContent=`+${amount}XP`;
+  document.body.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+updateHUD();
+showTitle();
+</script>
+</body>
+</html>
