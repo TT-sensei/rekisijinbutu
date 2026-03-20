@@ -90,9 +90,21 @@ body::before{
 #back-btn:active{background:var(--muted)}
 #logo{
   font-family:var(--font-title);
+  cursor:pointer;flex:1;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  gap:1px;
+  min-width:0;
+}
+#logo-title{
   font-size:1.05rem;font-weight:700;
-  color:var(--gold);cursor:pointer;
-  letter-spacing:.05em;flex:1;
+  color:var(--gold);letter-spacing:.05em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#logo-rank{
+  font-size:.62rem;font-weight:700;
+  color:var(--subtext);letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 #hud{
   display:flex;align-items:center;gap:10px;
@@ -834,7 +846,10 @@ body::before{
 <!-- HEADER -->
 <div id="header">
   <button id="back-btn" onclick="goBack()">◀</button>
-  <div id="logo" onclick="goTitle()">🔍 れきし探偵団</div>
+  <div id="logo" onclick="goTitle()">
+    <div id="logo-title">🔍 れきし探偵団</div>
+    <div id="logo-rank">よみこみちゅう…</div>
+  </div>
   <div id="hud">
     <div id="combo-display"></div>
     <div class="hud-pill">
@@ -1043,15 +1058,42 @@ let comboCount=0;
 function addXP(amount){
   save.xp+=amount;
   const nLv=Math.floor(save.xp/XP_PER_LEVEL)+1;
-  if(nLv>save.level){ save.level=nLv; showToast(`🎉 レベルアップ！ Lv.${save.level} になった！`); }
+  if(nLv>save.level){
+    save.level=nLv;
+    const rankMsg = (nLv % 10 === 0) ? ` ／ 称号：${getRank(nLv)}` : '';
+    showToast(`🎉 Lv.${nLv} レベルアップ！${rankMsg}`);
+  }
   persist(); updateHUD(); showXPPopup(amount);
 }
+// ── 称号テーブル（Lv.10ごと）──
+const RANKS = [
+  { min:  1, label:'🔍 見習い探偵',       },
+  { min: 10, label:'📜 古代の調査員',      },
+  { min: 20, label:'⚔️ 武士研究者',        },
+  { min: 30, label:'🏯 城郭の探偵',        },
+  { min: 40, label:'🌸 江戸の目付',        },
+  { min: 50, label:'🚢 黒船ウォッチャー',  },
+  { min: 60, label:'📚 明治の知識人',      },
+  { min: 70, label:'🏆 歴史の賢者',        },
+  { min: 80, label:'👑 れきし探偵団長',    },
+  { min: 90, label:'⭐ 伝説の歴史家',      },
+];
+function getRank(lv){
+  let r = RANKS[0];
+  for(const row of RANKS){ if(lv >= row.min) r = row; else break; }
+  return r.label;
+}
+
 function updateHUD(){
-  document.getElementById('hud-level').textContent=`Lv.${save.level}`;
+  const lv = save.level;
+  document.getElementById('hud-level').textContent=`Lv.${lv}`;
   const xi=save.xp%XP_PER_LEVEL;
   document.getElementById('xp-bar').style.width=(xi/XP_PER_LEVEL*100)+'%';
   const ul=Object.values(save.people).filter(p=>p.unlocked).length;
   document.getElementById('hud-unlocked').textContent=`${ul}/42`;
+  // 称号をロゴ下に表示
+  const rankEl=document.getElementById('logo-rank');
+  if(rankEl) rankEl.textContent=getRank(lv);
 }
 function updateCombo(){
   const el=document.getElementById('combo-display');
