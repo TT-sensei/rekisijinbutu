@@ -461,8 +461,8 @@ body::before{
 .history-card.available:hover,.history-card.available:focus-visible{border-color:var(--green);transform:translateY(-2px)}
 .history-card.unavailable{cursor:default;opacity:.62}.history-name{font-family:var(--font-title);font-size:1.3rem;color:var(--green);font-weight:800}.history-subtitle{font-size:1rem;font-weight:900;line-height:1.45;margin:7px 0}.history-period,.history-description,.history-stats{font-size:.75rem;color:var(--subtext);line-height:1.6}.history-emoji{font-size:2.2rem;float:right}.history-status{display:inline-block;margin-top:10px;padding:4px 9px;border-radius:10px;background:var(--green-bg);color:var(--green);font-size:.72rem;font-weight:900}.history-status.pending{background:var(--bg2);color:var(--subtext)}
 .quiz-era #q-card{border-color:rgba(61,214,140,.45)}.quiz-era .quiz-who{color:var(--green)}
-.fb-explanation{margin-top:6px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.8rem;line-height:1.55}
-@media(max-width:560px){.mode-grid{grid-template-columns:1fr}.mode-card{min-height:120px}.history-list{grid-template-columns:1fr}}
+.fb-explanation{margin-top:6px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.8rem;line-height:1.55;max-height:22vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:560px){.mode-grid{grid-template-columns:1fr}.mode-card{min-height:120px}.history-list{grid-template-columns:1fr}.history-card{min-height:0}.mix-card{align-items:flex-start;flex-wrap:wrap}.mix-card-badge{white-space:normal}.people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* ═══════════════════════════════════════════
    3. 人物選択 PEOPLE SCREEN
@@ -574,7 +574,7 @@ body::before{
 #quiz-screen{
   flex-direction:column;
   overflow:hidden;
-  padding:12px 14px 14px;
+  padding:12px 14px calc(14px + env(safe-area-inset-bottom));
   max-width:600px;
   width:100%;
   margin:0 auto;
@@ -696,12 +696,26 @@ body::before{
 #next-btn:hover{box-shadow:0 4px 20px rgba(240,100,53,.4)}
 #next-btn:active{transform:scale(.98)}
 
+/* 短い画面や文字量の多い問題では、切り捨てず画面全体をスクロールする */
+@media (max-height:700px), (max-width:480px){
+  #quiz-screen.active{display:block;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+  .choices{min-height:auto}
+  .choice{min-height:52px;padding:11px 14px;margin-bottom:7px;overflow-wrap:anywhere}
+  .fb-explanation{max-height:none}
+  #next-btn{margin-bottom:4px}
+}
+@media (min-width:481px) and (max-height:760px){
+  .q-card{padding:10px 14px;margin-bottom:7px}.q-text{font-size:.9rem;line-height:1.55}
+  .choice{font-size:.84rem}.quiz-header{margin-bottom:7px}
+}
+
 /* レビューバッジ */
 .quiz-mode-badge{
   font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:10px;
 }
 .quiz-mode-badge.review{background:#5a3200;color:#ffd080}
 .quiz-mode-badge.normal{display:none}
+.quiz-mode-badge.person{background:var(--yellow-bg);color:var(--gold);border:1px solid var(--gold-dim)}
 
 /* ═══════════════════════════════════════════
    5. RESULT SCREEN
@@ -964,7 +978,7 @@ body::before{
     <div class="title-main">れきし探偵団</div>
     <div class="title-ruby">REKISHI TANTEIDAN</div>
     <p class="title-catch">
-      歴史上の人物42人をクイズで調べて<br>シルエットを解放しよう！
+      歴史上の人物をクイズで調べて<br>シルエットを解放しよう！
     </p>
     <button class="title-start-btn" onclick="showModeSelect()">
       ▶ 調査をはじめる
@@ -979,7 +993,7 @@ body::before{
   <div id="mode-screen" class="screen">
     <div class="screen-title">学び方を選ぼう</div><div class="screen-sub">どちらの入口から歴史を調査する？</div>
     <div class="mode-grid">
-      <button class="mode-card" onclick="showEra()"><span class="mode-icon">👤</span><span class="mode-name">人物から学ぶ</span><span class="mode-desc">42人の歴史人物にちょうせん</span></button>
+      <button class="mode-card" onclick="showEra()"><span class="mode-icon">👤</span><span class="mode-name">人物から学ぶ</span><span class="mode-desc">歴史人物のクイズにちょうせん</span></button>
       <button class="mode-card" onclick="showHistoryEras()"><span class="mode-icon">🏺</span><span class="mode-name">時代から学ぶ</span><span class="mode-desc">くらし・文化・遺跡から歴史を学ぶ</span></button>
     </div>
   </div>
@@ -1094,27 +1108,26 @@ body::before{
 // ══════════════════════
 // 1. 整合性チェック
 // ══════════════════════
-(function(){
-  const personIds=new Set(PEOPLE.map(p=>p.id));
-  const questionIds=new Set(QUESTIONS.map(q=>q.personId));
-  [...personIds].filter(id=>!questionIds.has(id)).forEach(id=>console.warn('問題なし:',id));
-  [...questionIds].filter(id=>!personIds.has(id)).forEach(id=>console.warn('人物なし:',id));
-  PEOPLE.forEach(p=>{
-    const c=QUESTIONS.filter(q=>q.personId===p.id).length;
-    if(c<5) console.warn(`${p.name}: ${c}問`);
+(function validateData(){
+  const warn=(message,detail)=>console.warn(`[データ確認] ${message}`,detail);
+  const duplicateIds=(items,label)=>items.map(x=>x.id).filter((id,i,ids)=>ids.indexOf(id)!==i).forEach(id=>warn(`${label}IDの重複`,id));
+  duplicateIds(PEOPLE,'人物'); duplicateIds(HISTORY_ERAS,'時代単元');
+  const personIds=new Set(PEOPLE.map(p=>p.id)),eraIds=new Set(HISTORY_ERAS.map(e=>e.id));
+  const allQuestions=[...QUESTIONS.map((q,i)=>({q,i,type:'人物'})),...ERA_QUESTIONS.map((q,i)=>({q,i,type:'時代'}))];
+  const seen=new Map(),answers=[0,0,0,0];
+  allQuestions.forEach(({q,i,type})=>{
+    if(type==='人物'&&!personIds.has(q.personId))warn('存在しないpersonId',q.personId);
+    if(type==='時代'&&!eraIds.has(q.eraId))warn('存在しないeraId',q.eraId);
+    if(!q.q||!q.q.trim())warn(`${type}問題の空の問題文`,i);
+    if(!Array.isArray(q.choices)||q.choices.length!==4)warn(`${type}問題の選択肢が4つではありません`,i);
+    if(!Number.isInteger(q.answer)||q.answer<0||q.answer>=(q.choices||[]).length)warn(`${type}問題のanswerが範囲外です`,i);
+    else answers[q.answer]++;
+    if(type==='時代'&&(!q.explanation||!q.explanation.trim()))warn('時代問題の空の解説',i);
+    const text=(q.q||'').trim(); if(text){if(seen.has(text))warn('完全に同じ問題文',[seen.get(text),`${type}${i}`]);else seen.set(text,`${type}${i}`);}
   });
-})();
-(function validateEraData(){
-  const ids=HISTORY_ERAS.map(e=>e.id), idSet=new Set(ids);
-  ids.filter((id,i)=>ids.indexOf(id)!==i).forEach(id=>console.warn('重複した時代単元ID:',id));
-  HISTORY_ERAS.forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q.eraId===e.id).length;if(count<5)console.warn(`${e.name}（${e.id}）: ${count}問`);});
-  ERA_QUESTIONS.forEach((q,i)=>{
-    if(!idSet.has(q.eraId))console.warn('存在しないeraId:',q.eraId);
-    if(!q.q||!q.q.trim())console.warn('空の問題文:',i);
-    if(!Array.isArray(q.choices)||q.choices.length!==4)console.warn('選択肢が4つでない問題:',i);
-    if(!Number.isInteger(q.answer)||q.answer<0||q.answer>=(q.choices||[]).length)console.warn('answer範囲外:',i);
-    if(!q.explanation||!q.explanation.trim())console.warn('空の解説:',i);
-  });
+  PEOPLE.forEach(p=>{const count=QUESTIONS.filter(q=>q.personId===p.id).length;if(count<5)warn(`${p.name}の問題数`,count);});
+  HISTORY_ERAS.forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q.eraId===e.id).length;if(count<5)warn(`${e.name}（${e.id}）の問題数`,count);});
+  const total=answers.reduce((a,b)=>a+b,0);answers.forEach((count,index)=>{if(total&&count/total>.4)warn('正解番号の偏り',{answer:index,count,total});});
 })();
 
 // ══════════════════════
@@ -1124,22 +1137,35 @@ const SAVE_KEY='rekiDanSave_v3';
 const XP_PER_LEVEL=100,CORRECT_XP=10,PERFECT_BONUS=30,DAILY_XP=50,STREAK_BONUS=30;
 
 function def(){ return {xp:0,level:1,people:{},eras:{},lastLogin:null,streak:0}; }
-let save=(()=>{ try{return JSON.parse(localStorage.getItem(SAVE_KEY))||def();}catch(e){return def();} })();
-if(!save.people)save.people={};
-if(!save.eras)save.eras={};
-function persist(){ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }
+function finiteNumber(value,fallback=0){const n=Number(value);return Number.isFinite(n)&&n>=0?n:fallback;}
+function loadSave(){
+  let raw;
+  try{raw=JSON.parse(localStorage.getItem(SAVE_KEY));}catch(e){console.warn('保存データを読み込めなかったため、安全な初期値を使います。',e);return def();}
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return def();
+  // 未知のキーと既存の人物記録は残したまま、欠けた領域だけを補います。
+  raw.people=raw.people&&typeof raw.people==='object'&&!Array.isArray(raw.people)?raw.people:{};
+  raw.eras=raw.eras&&typeof raw.eras==='object'&&!Array.isArray(raw.eras)?raw.eras:{};
+  raw.xp=finiteNumber(raw.xp);raw.level=Math.max(1,Math.floor(finiteNumber(raw.level,1)));
+  raw.streak=Math.floor(finiteNumber(raw.streak));raw.lastLogin=typeof raw.lastLogin==='string'?raw.lastLogin:null;
+  return raw;
+}
+let save=loadSave();
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){console.warn('保存データを書き込めませんでした。',e);}}
 
 function personSave(id){
   if(!save.people[id]) save.people[id]={cleared:0,unlocked:false,correct:0,total:0};
-  const p=save.people[id];
-  if(p.correct===undefined)p.correct=0;
-  if(p.total===undefined)p.total=0;
+  let p=save.people[id];
+  if(!p||typeof p!=='object'||Array.isArray(p))p=save.people[id]={};
+  p.cleared=Math.floor(finiteNumber(p.cleared));p.correct=Math.floor(finiteNumber(p.correct));p.total=Math.floor(finiteNumber(p.total));
+  p.unlocked=Boolean(p.unlocked||p.cleared>0);
   return p;
 }
 function eraSave(id){
   if(!save.eras[id])save.eras[id]={cleared:0,correct:0,total:0,mastered:false,bestScore:0};
-  const e=save.eras[id];
-  if(e.cleared===undefined)e.cleared=0;if(e.correct===undefined)e.correct=0;if(e.total===undefined)e.total=0;if(e.mastered===undefined)e.mastered=false;if(e.bestScore===undefined)e.bestScore=0;
+  let e=save.eras[id];
+  if(!e||typeof e!=='object'||Array.isArray(e))e=save.eras[id]={};
+  e.cleared=Math.floor(finiteNumber(e.cleared));e.correct=Math.floor(finiteNumber(e.correct));e.total=Math.floor(finiteNumber(e.total));
+  e.bestScore=Math.floor(finiteNumber(e.bestScore));e.mastered=Boolean(e.mastered);
   return e;
 }
 
@@ -1148,7 +1174,7 @@ function eraSave(id){
 // ══════════════════════
 function shuffleChoices(q){
   const arr=q.choices.map((c,i)=>({text:c,isCorrect:i===q.answer}));
-  arr.sort(()=>Math.random()-.5);
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
   return {...q,choices:arr.map(a=>a.text),answer:arr.findIndex(a=>a.isCorrect)};
 }
 
@@ -1213,8 +1239,8 @@ function updateHUD(){
   document.getElementById('hud-level').textContent=`Lv.${lv}`;
   const xi=save.xp%XP_PER_LEVEL;
   document.getElementById('xp-bar').style.width=(xi/XP_PER_LEVEL*100)+'%';
-  const ul=Object.values(save.people).filter(p=>p.unlocked).length;
-  document.getElementById('hud-unlocked').textContent=`${ul}/42`;
+  const ul=Object.values(save.people).filter(p=>p&&typeof p==='object'&&p.unlocked).length;
+  document.getElementById('hud-unlocked').textContent=`${ul}/${PEOPLE.length}`;
   // 称号・レベルをヘッダーに表示
   const rankEl=document.getElementById('logo-rank');
   if(rankEl) rankEl.textContent=getRank(lv);
@@ -1369,7 +1395,7 @@ function buildMixCard(){
       <div class="mix-card-icon">🌀</div>
       <div class="mix-card-body">
         <div class="mix-card-title">全時代ミックスランダム</div>
-        <div class="mix-card-desc">42人の中からランダムに出題！<br>上級者向けの完全ランダムモード</div>
+        <div class="mix-card-desc">すべての人物からランダムに出題！<br>上級者向けの完全ランダムモード</div>
       </div>
       <div class="${badgeCls}">${badgeTxt}</div>
     </div>
@@ -1384,7 +1410,7 @@ function startEraRandom(era){
   const people = PEOPLE.filter(p=>p.era===era);
   // ランダムに1人選んでクイズ開始
   const p = people[Math.floor(Math.random()*people.length)];
-  startQuiz(p.id);
+  if(p)startQuiz(p.id);
 }
 
 // 全ミックスランダム
@@ -1463,7 +1489,7 @@ function startEraQuiz(eraId,isReview=false,reviewQs=null){
   if(!pool.length){showToast('問題を準備中です');return;}
   const selected=[...pool].sort(()=>Math.random()-.5).slice(0,isReview?pool.length:Math.min(5,pool.length));
   const questions=selected.map(q=>shuffleChoices(q));
-  quizState={type:'era',eraId,era,questions,current:0,results:[],earnedXP:0,answered:false,wrongQs:[],isReview};
+  quizState={type:'era',eraId,era,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview};
   comboCount=0;updateCombo();document.getElementById('quiz-screen').classList.add('quiz-era');
   document.getElementById('quiz-emoji').textContent=era.emoji;document.getElementById('quiz-person-name').textContent=era.name;
   const badge=document.getElementById('quiz-mode-badge');badge.textContent=isReview?'🔄 復習':`🏺 ${questions[0].category||'時代'}`;badge.className=`quiz-mode-badge ${isReview?'review':''}`;
@@ -1472,14 +1498,16 @@ function startEraQuiz(eraId,isReview=false,reviewQs=null){
 
 function startQuiz(personId,isReview=false,reviewQs=null){
   const person=PEOPLE.find(p=>p.id===personId);
+  if(!person){showToast('人物データが見つかりません');return;}
   let questions;
   if(isReview&&reviewQs){
     questions=reviewQs.map(q=>shuffleChoices(q)).sort(()=>Math.random()-.5);
   } else {
     const pool=QUESTIONS.filter(q=>q.personId===personId);
-    questions=pool.sort(()=>Math.random()-.5).slice(0,Math.min(5,pool.length)).map(q=>shuffleChoices(q));
+    questions=[...pool].sort(()=>Math.random()-.5).slice(0,Math.min(5,pool.length)).map(q=>shuffleChoices(q));
   }
-  quizState={type:'person',personId,person,questions,current:0,results:[],earnedXP:0,answered:false,wrongQs:[],isReview};
+  if(!questions.length){showToast('この人物の問題は準備中です');return;}
+  quizState={type:'person',personId,person,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview};
   document.getElementById('quiz-screen').classList.remove('quiz-era');
   comboCount=0; updateCombo();
 
@@ -1487,7 +1515,7 @@ function startQuiz(personId,isReview=false,reviewQs=null){
   document.getElementById('quiz-person-name').textContent=person.name;
   const badge=document.getElementById('quiz-mode-badge');
   if(isReview){ badge.textContent='🔄 復習'; badge.className='quiz-mode-badge review'; }
-  else { badge.textContent=''; badge.className='quiz-mode-badge normal'; }
+  else { badge.textContent='👤 人物モード'; badge.className='quiz-mode-badge person'; }
 
   showScreen('quiz-screen');
   renderQuestion();
@@ -1496,6 +1524,9 @@ function startQuiz(personId,isReview=false,reviewQs=null){
 function renderQuestion(){
   const {questions,current,results}=quizState;
   const q=questions[current];
+  if(!q){showToast('問題を表示できませんでした');goBack();return;}
+  quizState.advancing=false;
+  if(quizState.type==='era'&&!quizState.isReview)document.getElementById('quiz-mode-badge').textContent=`🏺 時代モード・${q.category||'総合'}`;
 
   // dots
   const dotsEl=document.getElementById('quiz-dots');
@@ -1512,6 +1543,7 @@ function renderQuestion(){
   document.getElementById('q-text').textContent=q.q;
   document.getElementById('feedback-area').innerHTML='';
   document.getElementById('next-btn').style.display='none';
+  document.getElementById('next-btn').disabled=false;
 
   const qCard=document.getElementById('q-card');
   qCard.classList.remove('flash-ok','flash-ng');
@@ -1582,6 +1614,8 @@ function answer(correct,clickedBtn,q,choicesEl){
 }
 
 function nextQuestion(){
+  if(!quizState.answered||quizState.advancing)return;
+  quizState.advancing=true;document.getElementById('next-btn').disabled=true;
   quizState.current++;
   if(quizState.current>=quizState.questions.length) showResult();
   else renderQuestion();
@@ -1594,7 +1628,7 @@ function showResult(){
   if(quizState.type==='era'){showEraResult();return;}
   const {personId,person,questions,results,earnedXP,wrongQs,isReview}=quizState;
   const correct=results.filter(Boolean).length;
-  const perfect=correct===questions.length;
+  const perfect=questions.length===5&&correct===5;
   const ps=personSave(personId);
   let totalXP=earnedXP, bonusMsg='';
 
@@ -1661,7 +1695,7 @@ function showResult(){
 
   const back=document.createElement('button');
   back.className='btn btn-secondary'; back.textContent='ほかの人物へ';
-  back.onclick=()=>goBack();
+  back.onclick=()=>{screenStack=screenStack.filter(id=>id!=='quiz-screen'&&id!=='result-screen');renderPeopleGrid();showScreen('people-screen',false);};
   btnsEl.appendChild(back);
 
   showScreen('result-screen');
@@ -1673,7 +1707,7 @@ function showEraResult(){
   let totalXP=earnedXP,bonusMsg='';
   if(!isReview){es.cleared++;es.bestScore=Math.max(es.bestScore,correct);if(perfect){es.mastered=true;totalXP+=PERFECT_BONUS;addXP(PERFECT_BONUS);bonusMsg=`🌟 全問正解ボーナス +${PERFECT_BONUS}XP！`;soundUnlock();}persist();}
   document.getElementById('result-emoji').textContent=perfect?'🏆':correct>=Math.ceil(questions.length*.6)?'⭐':'📖';
-  document.getElementById('result-title').textContent=perfect?'縄文マスター！':correct>=Math.ceil(questions.length*.6)?'よくできました！':'もう一度調査しよう！';
+  document.getElementById('result-title').textContent=perfect?`${era.name}マスター！`:correct>=Math.ceil(questions.length*.6)?'よくできました！':'もう一度調査しよう！';
   document.getElementById('result-sub').textContent=bonusMsg||`${correct}/${questions.length} 正解`;
   document.getElementById('res-correct').textContent=`${correct}/${questions.length}`;document.getElementById('res-xp').textContent=`+${totalXP}`;document.getElementById('res-clear').textContent=`${es.cleared}回`;
   const pct=es.total?Math.round(es.correct/es.total*100):0;
