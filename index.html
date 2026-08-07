@@ -443,13 +443,15 @@ body::before{
   display:flex;align-items:center;justify-content:center;
   font-size:1.05rem;
   background:var(--bg2);border:1px solid var(--border);
-  transition:border-color .15s;
+  transition:border-color .15s;overflow:hidden;
 }
+.era-p-img{width:100%;height:100%;object-fit:cover;display:block}
 .era-p-icon.unlocked{
   border-color:var(--green-bg);
   background:var(--green-bg);
 }
-.era-p-icon.locked{filter:grayscale(.8);opacity:.5}
+.era-p-icon.locked{opacity:.72}
+.era-p-icon.locked .era-p-img{filter:grayscale(1) brightness(.16) contrast(1.8);opacity:.72}
 
 /* 学び方・時代クイズカード */
 .mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:24px}
@@ -547,8 +549,10 @@ body::before{
   border-radius:18px;border:2px solid rgba(240,180,41,.5);
   box-shadow:0 4px 12px rgba(0,0,0,.28);
 }
-.person-card.state-locked .p-icon{filter:blur(4px) grayscale(1);opacity:.4}
-.quiz-who-icon{width:48px;height:48px;object-fit:cover;border-radius:12px;vertical-align:middle;margin-right:7px}
+.person-card.state-locked .p-icon{filter:grayscale(1) brightness(.14) contrast(1.8);opacity:.58}
+.quiz-who-emoji{display:inline-flex;align-items:center;justify-content:center}
+.quiz-who-icon{width:48px;height:48px;object-fit:cover;border-radius:12px;vertical-align:middle;margin-right:7px;border:1px solid rgba(240,180,41,.45)}
+.quiz-who-icon.locked{filter:grayscale(1) brightness(.14) contrast(1.8);opacity:.62}
 
 /* 理解度ゲージ */
 .p-gauge-wrap{
@@ -869,6 +873,8 @@ body::before{
   box-shadow:0 0 14px rgba(240,180,41,.18);
 }
 .cc-emoji{font-size:2rem;margin-bottom:2px}
+.cc-person-img{width:76px;height:76px;object-fit:cover;display:block;border-radius:14px;margin-bottom:3px;border:1px solid rgba(240,180,41,.4)}
+.cc-person-img.locked{filter:grayscale(1) brightness(.14) contrast(1.8);opacity:.72}
 .cc-name{font-size:.82rem;font-weight:700}
 .cc-kana{font-size:.62rem;color:var(--subtext)}
 .cc-era{font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:6px;background:var(--bg2);color:var(--subtext);margin-top:2px}
@@ -897,7 +903,8 @@ body::before{
   background:var(--surface2);border:none;color:var(--subtext);
   width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.9rem;
 }
-.modal-emoji{font-size:3.5rem;margin-bottom:6px;display:block}
+.modal-emoji{font-size:3.5rem;margin-bottom:6px;display:flex;justify-content:center}
+.modal-person-img{width:132px;height:132px;object-fit:cover;display:block;border-radius:22px;border:2px solid rgba(240,180,41,.55);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .modal-name{font-size:1.3rem;font-weight:900;margin-bottom:2px;font-family:var(--font-title)}
 .modal-kana{font-size:.76rem;color:var(--subtext);margin-bottom:5px}
 .modal-era{display:inline-block;font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--bg2);color:var(--gold);margin-bottom:10px}
@@ -921,7 +928,9 @@ body::before{
   flex-direction:column;gap:14px;text-align:center;padding:20px;
 }
 #unlock-splash.show{display:flex}
-.splash-emoji{font-size:6.5rem;animation:splashBounce .55s ease}
+.splash-emoji{font-size:6.5rem;animation:splashBounce .55s ease;display:flex;justify-content:center}
+.splash-person-img{width:180px;height:180px;object-fit:cover;display:block;border-radius:30px;border:3px solid var(--gold);box-shadow:0 0 34px rgba(240,180,41,.35)}
+.unlock-person-img{width:42px;height:42px;object-fit:cover;border-radius:9px;vertical-align:middle;margin-right:7px;border:1px solid rgba(240,180,41,.5)}
 @keyframes splashBounce{from{transform:scale(0) rotate(-20deg)}70%{transform:scale(1.18) rotate(4deg)}to{transform:scale(1) rotate(0)}}
 .splash-title{font-family:var(--font-title);font-size:1.9rem;font-weight:800;color:var(--gold)}
 .splash-sub{font-size:1rem;color:var(--text)}
@@ -1438,7 +1447,7 @@ function buildEraList(){
     const iconsHTML=people.map(p=>{
       const ps=personSave(p.id);
       const cls=ps.unlocked?'era-p-icon unlocked':'era-p-icon locked';
-      return `<div class="${cls}" title="${p.name}">${p.emoji}</div>`;
+      return `<div class="${cls}" title="${p.name}"><img class="era-p-img" src="assets/people/${p.icon}.png" alt="${p.name}" loading="lazy"></div>`;
     }).join('');
 
     // 時代ランダムモード：その時代の人物を全員解放で解禁
@@ -1617,7 +1626,8 @@ function startQuiz(personId,isReview=false,reviewQs=null){
   document.getElementById('quiz-screen').classList.remove('quiz-era');
   comboCount=0; updateCombo();
 
-  document.getElementById('quiz-emoji').textContent=person.emoji;
+  const quizPersonUnlocked=personSave(person.id).unlocked;
+  document.getElementById('quiz-emoji').innerHTML=`<img class="quiz-who-icon${quizPersonUnlocked?'':' locked'}" src="assets/people/${person.icon}.png" alt="${person.name}のイラスト">`;
   document.getElementById('quiz-person-name').textContent=person.name;
   const badge=document.getElementById('quiz-mode-badge');
   if(isReview){ badge.textContent='🔄 復習'; badge.className='quiz-mode-badge review'; }
@@ -1770,10 +1780,10 @@ function showResult(){
 
   const ulEl=document.getElementById('unlock-area');
   if(perfect&&!isReview){
-    if(ps.cleared===1) ulEl.innerHTML=`<div class="unlock-banner"><h3>🔓 解放！</h3><p>${person.emoji} <strong>${person.name}</strong> を解放した！</p></div>`;
+    if(ps.cleared===1) ulEl.innerHTML=`<div class="unlock-banner"><h3>🔓 解放！</h3><p><img class="unlock-person-img" src="assets/people/${person.icon}.png" alt=""> <strong>${person.name}</strong> を解放した！</p></div>`;
     else {
       const ex=ps.cleared===3?'✨ 背景が変わった！':ps.cleared===5?'🏆 マスター達成！':'';
-      ulEl.innerHTML=`<div class="unlock-banner"><h3>🌟 クリア！</h3><p>${person.emoji} <strong>${person.name}</strong> ${ps.cleared}回目！ ${ex}</p></div>`;
+      ulEl.innerHTML=`<div class="unlock-banner"><h3>🌟 クリア！</h3><p><img class="unlock-person-img" src="assets/people/${person.icon}.png" alt=""> <strong>${person.name}</strong> ${ps.cleared}回目！ ${ex}</p></div>`;
     }
   } else if(!perfect&&!isReview&&correct===questions.length-1&&!ps.unlocked){
     ulEl.innerHTML=`<div class="near-miss-banner">😣 おしい！あと1問で解放できた！</div>`;
@@ -1833,7 +1843,7 @@ function showEraResult(){
 function showSplash(person,type){
   soundUnlock();
   if(type==='unlock'){
-    document.getElementById('splash-emoji').textContent=person.emoji;
+    document.getElementById('splash-emoji').innerHTML=`<img class="splash-person-img" src="assets/people/${person.icon}.png" alt="${person.name}のイラスト">`;
     document.getElementById('splash-title').textContent=`${person.name} を解放！`;
     document.getElementById('splash-sub').textContent=`${person.kana}　${person.era}時代`;
   } else {
@@ -1885,7 +1895,7 @@ function buildCollection(){
     const card=document.createElement('div');
     card.className='cc '+(isM?'cc-mastered':isU?'cc-unlocked':'cc-locked');
     card.innerHTML=`
-      <span class="cc-emoji">${p.emoji}</span>
+      <img class="cc-person-img${isU?'':' locked'}" src="assets/people/${p.icon}.png" alt="${isU?p.name+'のイラスト':'未解放の人物'}" loading="lazy">
       <div class="cc-name">${isU?p.name:'？？？？'}</div>
       <div class="cc-kana">${isU?p.kana:''}</div>
       <span class="cc-era">${p.era}</span>
@@ -1903,7 +1913,7 @@ function openModal(personId){
   const ps=personSave(personId);
   const pct=ps.total>0?Math.round(ps.correct/ps.total*100):0;
   const color=gaugeColor(pct);
-  document.getElementById('modal-emoji').textContent=p.emoji;
+  document.getElementById('modal-emoji').innerHTML=`<img class="modal-person-img" src="assets/people/${p.icon}.png" alt="${p.name}のイラスト">`;
   document.getElementById('modal-name').textContent=p.name;
   document.getElementById('modal-kana').textContent=p.kana;
   document.getElementById('modal-era').textContent=p.era+'時代';
