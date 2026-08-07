@@ -542,6 +542,13 @@ body::before{
   font-size:2.4rem;
   display:block;
 }
+.p-icon{
+  width:94px;height:94px;object-fit:cover;display:block;
+  border-radius:18px;border:2px solid rgba(240,180,41,.5);
+  box-shadow:0 4px 12px rgba(0,0,0,.28);
+}
+.person-card.state-locked .p-icon{filter:blur(4px) grayscale(1);opacity:.4}
+.quiz-who-icon{width:48px;height:48px;object-fit:cover;border-radius:12px;vertical-align:middle;margin-right:7px}
 
 /* 理解度ゲージ */
 .p-gauge-wrap{
@@ -1560,11 +1567,14 @@ function renderPeopleGrid(){
 
     const lockEl=!ps.unlocked?'<div class="p-lock">🔒</div>':'';
 
+    const visual=p.icon
+      ? `<img class="p-icon" src="assets/people/${p.icon}.png" alt="${p.name}のイラスト" loading="lazy">`
+      : `<span class="p-emoji">${p.emoji}</span>`;
     card.innerHTML=`
       ${badge}
       <div class="p-name">${p.name}</div>
       <div class="p-kana">${p.kana}</div>
-      <span class="p-emoji">${p.emoji}</span>
+      ${visual}
       ${gaugeHTML}
       ${lockEl}
     `;
