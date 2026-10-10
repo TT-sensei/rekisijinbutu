@@ -1,4 +1,4 @@
-// people.js — 歴史人物データ 42人
+// people.js — 歴史人物データ 44人
 const PEOPLE = [
   // ── 古代 ──
   { id:"himiko",      name:"卑弥呼",       kana:"ひみこ",              era:"古代",     emoji:"👑", icon:"himiko", hint:"邪馬台国の女王" },
