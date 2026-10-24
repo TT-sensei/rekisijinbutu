@@ -26,8 +26,8 @@ main{width:min(1320px,calc(100% - 36px));margin:0 auto;padding:24px 0 40px}h1{fo
 <p class="intro">人物カードを、関係する出来事に結びつけよう。カードを枠まで動かしても、人物と出来事を順番にタップしてもいいよ。どちらを先に選んでも大丈夫！</p>
 <div class="toolbar"><span class="pill" id="progress">0 / 5 問</span><span class="pill" id="score">正解 0</span><button class="btn soft" id="restart">別の問題にする</button></div>
 <div class="layout">
-<section class="panel"><h2>① 年表の出来事</h2><div class="events" id="events"></div><div class="feedback" id="feedback" aria-live="polite"></div><p class="note">「⠿」をつかんで枠まで動かそう。ドラッグがむずかしいときは、人物カードと出来事の枠を順番にタップしてね。</p><button class="btn primary" id="next" style="display:none;width:100%;margin-top:12px">次の問題へ</button></section>
-<section class="panel"><h2>② 人物カード</h2><div class="people" id="people"></div><p class="note">名前やイラストを手がかりにしよう。人物を先にタップしてから出来事を選んでも、出来事を先に選んでもOK。正解したカードは選べなくなります。</p></section>
+<section class="panel"><h2>① 年表の出来事</h2><div class="events" id="events"></div><div class="feedback" id="feedback" aria-live="polite"></div><p class="note">人物カードを関係する出来事の枠に結びつけよう。ドラッグがむずかしいときは、人物カードと出来事の枠を順番にタップしてね。</p><button class="btn primary" id="next" style="display:none;width:100%;margin-top:12px">次の問題へ</button></section>
+<section class="panel"><h2>② 人物カード</h2><div class="people" id="people"></div><p class="note">名前やイラストを手がかりにしよう。正解すると、その人物と出来事が結びつく理由も読めるよ。人物を先に選んでも、出来事を先に選んでもOK。</p></section>
 </div>
 </main>
 <script>
@@ -56,7 +56,7 @@ function renderEvents(){
  })});
 }
 function renderPeople(){
- $('people').innerHTML=personOptions.map(p=>'<button class="person '+(selectedPerson===p.id?'active':'')+'" data-person="'+p.id+'" aria-pressed="'+(selectedPerson===p.id)+'" '+(usedPeople.has(p.id)||answered?'disabled':'')+'><img src="../assets/people/'+p.icon+'.png" alt=""><span><span class="person-name">'+p.name+'</span><span class="person-era">'+p.era+'</span></span><span class="drag-grip" data-drag-handle="'+p.id+'" aria-label="'+p.name+'をドラッグ" title="つかんでドラッグ">⠿</span></button>').join('');
+ $('people').innerHTML=personOptions.map(p=>'<button class="person '+(selectedPerson===p.id?'active':'')+'" data-person="'+p.id+'" aria-pressed="'+(selectedPerson===p.id)+'" '+(usedPeople.has(p.id)||answered?'disabled':'')+'><img src="../assets/people/'+p.icon+'.png" alt=""><span><span class="person-name">'+p.name+'</span><span class="person-era">'+(p.id==="xavier"||p.id==="nobunaga"?"戦国":p.era)+'</span></span><span class="drag-grip" data-drag-handle="'+p.id+'" aria-label="'+p.name+'をドラッグ" title="つかんでドラッグ">⠿</span></button>').join('');
  $('people').querySelectorAll('.person').forEach(b=>{
   b.addEventListener('click',()=>{if(Date.now()<suppressClickUntil)return;choosePerson(b.dataset.person)});
   const handle=b.querySelector('[data-drag-handle]');
@@ -77,13 +77,13 @@ function matchPersonToEvent(eventId,id){
  if(!event||!picked)return;
  if(id===eventId){
   usedPeople.add(id);score++;solved++;selectedEvent=null;selectedPerson=null;
-  $('feedback').className='feedback show ok';$('feedback').textContent='正解！ '+picked.name+' と「'+event.event+'」が結びついたね。';
+  $('feedback').className='feedback show ok';$('feedback').textContent='正解！ '+picked.name+' と「'+event.event+'」が結びついたね。'+(event.explanation?' '+event.explanation:'');
  }else{
   selectedEvent=eventId;selectedPerson=null;
   $('feedback').className='feedback show ng';$('feedback').textContent='もう一度考えてみよう。ヒント：'+picked.hint+'。';
  }
  renderEvents();renderPeople();updateProgress();
- if(solved===round.length){answered=true;$('feedback').className='feedback show ok';$('feedback').textContent='全問クリア！ 出来事と人物のつながりを確認できたね。';$('next').style.display='block';renderPeople()}
+ if(solved===round.length){answered=true;$('feedback').className='feedback show ok';$('feedback').textContent='全問クリア！ 出来事と人物のつながりを確認できたね。最後に正解した人物の説明も読んで、歴史の流れをふり返ろう。';$('next').style.display='block';renderPeople()}
 }
 function startDrag(event,card,handle){
  if(answered||card.disabled)return;
