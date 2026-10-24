@@ -83,7 +83,7 @@ function matchPersonToEvent(eventId,id){
   $('feedback').className='feedback show ng';$('feedback').textContent='もう一度考えてみよう。ヒント：'+picked.hint+'。';
  }
  renderEvents();renderPeople();updateProgress();
- if(solved===round.length){answered=true;$('feedback').className='feedback show ok';$('feedback').textContent='全問クリア！ 出来事と人物のつながりを確認できたね。最後に正解した人物の説明も読んで、歴史の流れをふり返ろう。';$('next').style.display='block';renderPeople()}
+ if(solved===round.length){answered=true;$('feedback').className='feedback show ok';$('feedback').textContent='全問クリア！ 出来事と人物のつながりを確認できたね。'+(event.explanation?' '+event.explanation:'');$('next').style.display='block';renderPeople()}
 }
 function startDrag(event,card,handle){
  if(answered||card.disabled)return;
