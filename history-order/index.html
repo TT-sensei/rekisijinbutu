@@ -6,11 +6,12 @@
 <meta name="theme-color" content="#f5efe2">
 <title>歴史ならべ｜日本の歴史カードゲーム</title>
 <script src="../people.js"></script>
+<script src="./dates.js"></script>
 <style>
 :root{--paper:#f7f1e5;--ink:#302b25;--muted:#746b5d;--red:#8c3b2f;--gold:#b18b39;--green:#426b58;--line:#d8c9aa;--card:#fffdf7}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN",system-ui,sans-serif;min-height:100vh}
 header{display:flex;align-items:center;gap:12px;padding:14px max(16px,calc((100vw - 850px)/2));border-bottom:1px solid var(--line);background:#fbf7ee}
-header a{color:var(--red);font-weight:800;text-decoration:none}.brand{font-size:.85rem;color:var(--muted);flex:1;text-align:right}
+header .brand{font-size:.85rem;color:var(--muted);flex:1;text-align:right}
 .wrap{width:min(100% - 28px,760px);margin:0 auto;padding:28px 0 48px}.kicker{font-size:.75rem;letter-spacing:.12em;color:var(--green);font-weight:900}
 h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red)}.intro{line-height:1.8;color:var(--muted);margin:0 0 22px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 18px #59472b0d}
@@ -25,28 +26,25 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 </style>
 </head>
 <body>
-<header><a href="../">‹ れきし探偵団へ</a><div class="brand">独立チャレンジモード</div></header>
+<header><strong>歴史ならべ</strong><div class="brand">日本の歴史カードゲーム</div></header>
 <main class="wrap">
 <div class="kicker">HISTORY ORDER CHALLENGE</div><h1>歴史ならべ</h1>
-<p class="intro">人物カードを、古い時代から新しい時代へ並べよう。人物のヒントも手がかりにしてね。並べ終わったら「順番をチェック」！</p>
+<p class="intro">人物カードを、古い年代から新しい年代へ並べよう。名前とイラスト、「したこと」のヒントが手がかり。答え合わせでは、年代と出来事も確認できるよ。</p>
 <section class="panel">
 <div class="topline"><strong>古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
-<p class="help">右の ↑ ↓ ボタンでカードを動かせます。人物データに登録された時代をもとに判定します。</p>
+<p class="help">右の ↑ ↓ ボタンでカードを動かせます。人物に関連する代表的な出来事の年代をもとに判定します。同じ年の人物は、どちらが先でも正解です。</p>
 <div class="cards" id="cards" aria-live="polite"></div>
 <div class="actions"><button class="btn primary" id="check">順番をチェック</button><button class="btn secondary" id="reset">並べ直す</button></div>
 <div class="feedback" id="feedback" role="status"></div><button class="btn next" id="next">つぎの問題へ →</button>
 </section></main>
 <script>
-const ERA_RANK={'古代':0,'奈良':1,'平安':2,'鎌倉':3,'室町':4,'安土桃山':5,'江戸':6,'江戸末期':7,'明治':8};
-const ERA_LABEL={'古代':'古代','奈良':'奈良時代','平安':'平安時代','鎌倉':'鎌倉時代','室町':'室町時代','安土桃山':'安土桃山時代','江戸':'江戸時代','江戸末期':'江戸時代末期','明治':'明治時代'};
 let roundNo=1,answerOrder=[],cards=[],checked=false;
 const $=id=>document.getElementById(id);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function newRound(){
  checked=false;$('feedback').className='feedback';$('feedback').textContent='';$('next').classList.remove('show');$('check').disabled=false;
- const byEra=new Map();PEOPLE.forEach(p=>{if(ERA_RANK[p.era]===undefined)return;if(!byEra.has(p.era))byEra.set(p.era,[]);byEra.get(p.era).push(p)});
- const eras=shuffle([...byEra.keys()]).slice(0,5);
- answerOrder=eras.map(e=>{const list=byEra.get(e);return list[Math.floor(Math.random()*list.length)]}).sort((a,b)=>ERA_RANK[a.era]-ERA_RANK[b.era]);
+ const pool=PEOPLE.filter(p=>HISTORY_DATES[p.id]&&Number.isFinite(HISTORY_DATES[p.id].year));
+ answerOrder=shuffle([...pool]).slice(0,5).sort((a,b)=>HISTORY_DATES[a.id].year-HISTORY_DATES[b.id].year);
  cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';render();
 }
 function render(){
@@ -65,14 +63,14 @@ function render(){
 function move(i,d){if(checked)return;[cards[i],cards[i+d]]=[cards[i+d],cards[i]];render()}
 function check(){
  if(checked)return;checked=true;render();$('check').disabled=true;
- const correct=cards.every((p,i)=>p.id===answerOrder[i].id);const fb=$('feedback');fb.className='feedback show '+(correct?'ok':'ng');
- if(correct){fb.textContent='正解！ 時代の流れをつかめたね。'}
- else {fb.textContent='おしい！ 正しい順番はこちら：'+answerOrder.map((p,i)=>(i+1)+'. '+p.name+'（'+ERA_LABEL[p.era]+'）').join(' → ')}
+ const correct=cards.every((p,i)=>i===0||HISTORY_DATES[cards[i-1].id].year<=HISTORY_DATES[p.id].year);const fb=$('feedback');fb.className='feedback show '+(correct?'ok':'ng');
+ const detail=answerOrder.map((p,i)=>(i+1)+'. '+p.name+'（'+HISTORY_DATES[p.id].date+'：'+HISTORY_DATES[p.id].event+'）').join(' → ');
+ fb.textContent=(correct?'正解！ 年代の流れをつかめたね。':'おしい！ 正しい年代順はこちら：')+' '+detail;
  $('next').classList.add('show');
 }
 $('check').onclick=check;
 $('reset').onclick=()=>{checked=false;cards=shuffle([...answerOrder]);$('feedback').className='feedback';$('next').classList.remove('show');$('check').disabled=false;render()};
 $('next').onclick=()=>{roundNo++;newRound()};
-if(typeof PEOPLE==='undefined'||!Array.isArray(PEOPLE)){$('cards').textContent='人物データを読み込めませんでした。';$('check').disabled=true}else{newRound()}
+if(typeof PEOPLE==='undefined'||!Array.isArray(PEOPLE)||typeof HISTORY_DATES==='undefined'){$('cards').textContent='人物データを読み込めませんでした。';$('check').disabled=true}else{newRound()}
 </script>
 </body></html>
