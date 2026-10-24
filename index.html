@@ -1428,27 +1428,58 @@ html{font-size:17px}
 // ══════════════════════
 // 1. 整合性チェック
 // ══════════════════════
-(function validateData(){
+function normalizeDataText(value){
+  return String(value==null?'':value).normalize('NFKC').toLowerCase().replace(/[\\s、。・（）()「」『』【】！？!?：:,.]/g,'');
+}
+function validateData(){
   const warn=(message,detail)=>console.warn(`[データ確認] ${message}`,detail);
+  const info=(message,detail)=>console.info(`[データ確認] ${message}`,detail);
   const duplicateIds=(items,label)=>items.map(x=>x.id).filter((id,i,ids)=>ids.indexOf(id)!==i).forEach(id=>warn(`${label}IDの重複`,id));
   duplicateIds(PEOPLE,'人物'); duplicateIds(HISTORY_ERAS,'時代単元');
   const personIds=new Set(PEOPLE.map(p=>p.id)),eraIds=new Set(HISTORY_ERAS.map(e=>e.id));
   const allQuestions=[...QUESTIONS.map((q,i)=>({q,i,type:'人物'})),...ERA_QUESTIONS.map((q,i)=>({q,i,type:'時代'}))];
-  const seen=new Map(),answers=[0,0,0,0];
+  const seenQuestions=new Map();
   allQuestions.forEach(({q,i,type})=>{
-    if(type==='人物'&&!personIds.has(q.personId))warn('存在しないpersonId',q.personId);
-    if(type==='時代'&&!eraIds.has(q.eraId))warn('存在しないeraId',q.eraId);
-    if(!q.q||!q.q.trim())warn(`${type}問題の空の問題文`,i);
-    if(!Array.isArray(q.choices)||q.choices.length!==4)warn(`${type}問題の選択肢が4つではありません`,i);
-    if(!Number.isInteger(q.answer)||q.answer<0||q.answer>=(q.choices||[]).length)warn(`${type}問題のanswerが範囲外です`,i);
-    else answers[q.answer]++;
-    if(type==='時代'&&(!q.explanation||!q.explanation.trim()))warn('時代問題の空の解説',i);
-    const text=(q.q||'').trim(); if(text){if(seen.has(text))warn('完全に同じ問題文',[seen.get(text),`${type}${i}`]);else seen.set(text,`${type}${i}`);}
+    const label=`${type}問題 #${i+1}`;
+    if(type==='人物'&&!personIds.has(q.personId))warn('存在しないpersonId',{label,personId:q.personId});
+    if(type==='時代'&&!eraIds.has(q.eraId))warn('存在しないeraId',{label,eraId:q.eraId});
+    if(!q.q||typeof q.q!=='string'||!q.q.trim())warn('空の問題文',label);
+    const choices=Array.isArray(q.choices)?q.choices:[];
+    if(choices.length!==4)warn('選択肢が4つではありません',{label,count:choices.length});
+    choices.forEach((choice,index)=>{
+      if(typeof choice!=='string'||!choice.trim())warn('空の選択肢',{label,index:index+1,choice});
+      if(typeof choice==='string'&&/^(?:その他|わからない|不明|どれでもない|上のすべて|すべて正しい|正解|不正解)$/i.test(choice.trim()))
+        warn('正解を推測しやすい定型選択肢（要確認）',{label,index:index+1,choice});
+    });
+    const choiceKeys=choices.map(normalizeDataText);
+    const duplicateChoices=choiceKeys.map((value,index)=>({value,index})).filter(item=>item.value&&choiceKeys.indexOf(item.value)!==item.index);
+    if(duplicateChoices.length)warn('同じ選択肢が重複しています',{label,choices:duplicateChoices.map(x=>choices[x.index])});
+    if(!Number.isInteger(q.answer)||q.answer<0||q.answer>=choices.length)warn('answerが範囲外です',{label,answer:q.answer});
+    if(type==='時代'&&(!q.explanation||!q.explanation.trim()))warn('時代問題の空の解説',label);
+    const normalizedQuestion=normalizeDataText(q.q);
+    if(normalizedQuestion){
+      if(seenQuestions.has(normalizedQuestion))warn('同じ問題文（表記違いを含む）が重複しています',[seenQuestions.get(normalizedQuestion),label]);
+      else seenQuestions.set(normalizedQuestion,label);
+    }
+    const lengths=choices.filter(x=>typeof x==='string').map(x=>x.trim().length).filter(Boolean);
+    if(lengths.length===4){
+      const shortest=Math.min(...lengths),longest=Math.max(...lengths);
+      if(longest>=40&&shortest>0&&longest/shortest>=4)
+        warn('選択肢の長さに大きな差があります（正解を推測しやすくないか確認）',{label,lengths,choices});
+    }
   });
-  PEOPLE.forEach(p=>{const count=QUESTIONS.filter(q=>q.personId===p.id).length;if(count<5)warn(`${p.name}の問題数`,count);});
-  HISTORY_ERAS.forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q.eraId===e.id).length;if(count<5)warn(`${e.name}（${e.id}）の問題数`,count);});
-  const total=answers.reduce((a,b)=>a+b,0);answers.forEach((count,index)=>{if(total&&count/total>.4)warn('正解番号の偏り',{answer:index,count,total});});
-})();
+  PEOPLE.forEach(p=>{const count=QUESTIONS.filter(q=>q.personId===p.id).length;if(count<5)warn('人物の問題数が少ない',{person:p.name,count});});
+  HISTORY_ERAS.forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q.eraId===e.id).length;if(count<5)warn('時代単元の問題数が少ない',{era:e.name,id:e.id,count});});
+  PERSON_EXPLANATION_RULES.forEach(rule=>{
+    if(!QUESTIONS.some(q=>q.personId===rule.personId&&q.q.includes(rule.match)))
+      warn('解説ルールと一致する人物問題がありません',{personId:rule.personId,match:rule.match});
+  });
+  const coreWithExplanation=QUESTIONS.filter(q=>getPersonExplanation(q)).length;
+  info('検査完了',{people:PEOPLE.length,personQuestions:QUESTIONS.length,personQuestionsWithExplanation:coreWithExplanation,eraUnits:HISTORY_ERAS.length,eraQuestions:ERA_QUESTIONS.length,checks:'ID・参照先・空欄・重複問題・重複選択肢・定型選択肢・選択肢の長さ・重点解説ルール'});
+  info('正解位置の偏り検査は省略しました','出題時に選択肢を毎回シャッフルするため、元データのanswer番号だけでは偏りを判定できません。');
+}
+window.validateData=validateData;
+validateData();;
 
 // ══════════════════════
 // 2. SAVE
@@ -1456,7 +1487,7 @@ html{font-size:17px}
 const SAVE_KEY='rekiDanSave_v3';
 const XP_PER_LEVEL=100,CORRECT_XP=10,PERFECT_BONUS=30,DAILY_XP=50,STREAK_BONUS=30;
 
-function def(){ return {xp:0,level:1,people:{},eras:{},lastLogin:null,streak:0}; }
+function def(){ return {xp:0,level:1,people:{},eras:{},reviewQuestions:[],lastLogin:null,streak:0}; }
 function finiteNumber(value,fallback=0){const n=Number(value);return Number.isFinite(n)&&n>=0?n:fallback;}
 function loadSave(){
   let raw;
@@ -1465,12 +1496,18 @@ function loadSave(){
   // 未知のキーと既存の人物記録は残したまま、欠けた領域だけを補います。
   raw.people=raw.people&&typeof raw.people==='object'&&!Array.isArray(raw.people)?raw.people:{};
   raw.eras=raw.eras&&typeof raw.eras==='object'&&!Array.isArray(raw.eras)?raw.eras:{};
+  raw.reviewQuestions=Array.isArray(raw.reviewQuestions)?raw.reviewQuestions.filter(item=>
+    item&&typeof item==='object'&&typeof item.key==='string'&&
+    (item.type==='person'||item.type==='era')&&typeof item.entityId==='string'&&
+    item.question&&typeof item.question.q==='string'&&Array.isArray(item.question.choices)&&
+    Number.isInteger(item.question.answer)&&item.question.answer>=0&&item.question.answer<item.question.choices.length
+  ):[];
   raw.xp=finiteNumber(raw.xp);raw.level=Math.max(1,Math.floor(finiteNumber(raw.level,1)));
   raw.streak=Math.floor(finiteNumber(raw.streak));raw.lastLogin=typeof raw.lastLogin==='string'?raw.lastLogin:null;
   return raw;
 }
 let save=loadSave();
-function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){console.warn('保存データを書き込めませんでした。',e);}}
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){console.warn('保存データを書き込めませんでした。',e);}updateReviewEntryPoint();}
 
 function personSave(id){
   if(!save.people[id]) save.people[id]={cleared:0,unlocked:false,correct:0,total:0};
@@ -1496,6 +1533,34 @@ function shuffleChoices(q){
   const arr=q.choices.map((c,i)=>({text:c,isCorrect:i===q.answer}));
   for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
   return {...q,choices:arr.map(a=>a.text),answer:arr.findIndex(a=>a.isCorrect)};
+}
+function savedQuestionKey(q,type){
+  const entityId=type==='era'?q.eraId:q.personId;
+  return `${type}:${entityId}:${String(q.q||'').trim().replace(/\\s+/g,'')}`;
+}
+function recordReviewAnswer(q,correct){
+  if(!Array.isArray(save.reviewQuestions))save.reviewQuestions=[];
+  const type=q.eraId?'era':'person',entityId=type==='era'?q.eraId:q.personId,key=savedQuestionKey(q,type);
+  if(correct){save.reviewQuestions=save.reviewQuestions.filter(item=>item.key!==key);return;}
+  const now=new Date(),existing=save.reviewQuestions.find(item=>item.key===key);
+  const wrongCount=(existing?finiteNumber(existing.wrongCount):0)+1;
+  const intervalDays=wrongCount===1?1:wrongCount===2?3:7;
+  const copy={...q,choices:Array.isArray(q.choices)?[...q.choices]:[]};
+  const record={key,type,entityId,question:copy,wrongCount,firstWrongAt:existing?.firstWrongAt||now.toISOString(),lastWrongAt:now.toISOString(),nextReviewAt:new Date(now.getTime()+intervalDays*86400000).toISOString()};
+  if(existing)save.reviewQuestions=save.reviewQuestions.map(item=>item.key===key?record:item);else save.reviewQuestions.push(record);
+}
+function updateReviewEntryPoint(){
+  const button=document.getElementById('review-open-btn'),badge=document.getElementById('review-count-badge');
+  if(!button||!badge)return;
+  const count=Array.isArray(save?.reviewQuestions)?save.reviewQuestions.length:0;
+  badge.textContent=String(count);
+  button.setAttribute('aria-label',`まちがいノート。保存した問題 ${count}問`);
+}
+function formatReviewDate(dateText){
+  if(!dateText)return '復習できます';
+  const date=new Date(dateText);
+  if(Number.isNaN(date.getTime())||date<=new Date())return '復習できます';
+  return `復習の目安：${date.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})}`;
 }
 
 // ══════════════════════
@@ -1805,21 +1870,21 @@ function renderPeopleGrid(){
 // ══════════════════════
 let quizState={};
 
-function startEraQuiz(eraId,isReview=false,reviewQs=null){
+function startEraQuiz(eraId,isReview=false,reviewQs=null,fromSavedReview=false){
   const era=HISTORY_ERAS.find(e=>e.id===eraId);
   if(!era||!era.available){showToast('この単元は準備中です');return;}
   const pool=isReview&&reviewQs?reviewQs:ERA_QUESTIONS.filter(q=>q.eraId===eraId);
   if(!pool.length){showToast('問題を準備中です');return;}
   const selected=[...pool].sort(()=>Math.random()-.5).slice(0,isReview?pool.length:Math.min(5,pool.length));
   const questions=selected.map(q=>shuffleChoices(q));
-  quizState={type:'era',eraId,era,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview};
+  quizState={type:'era',eraId,era,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview,returnToReview:fromSavedReview};
   comboCount=0;updateCombo();document.getElementById('quiz-screen').classList.add('quiz-era');
   document.getElementById('quiz-emoji').textContent=era.emoji;document.getElementById('quiz-person-name').textContent=era.name;
   const badge=document.getElementById('quiz-mode-badge');badge.textContent=isReview?'🔄 復習':`🏺 ${questions[0].category||'時代'}`;badge.className=`quiz-mode-badge ${isReview?'review':''}`;
   showScreen('quiz-screen');renderQuestion();
 }
 
-function startQuiz(personId,isReview=false,reviewQs=null){
+function startQuiz(personId,isReview=false,reviewQs=null,fromSavedReview=false){
   const person=PEOPLE.find(p=>p.id===personId);
   if(!person){showToast('人物データが見つかりません');return;}
   let questions;
@@ -1830,7 +1895,7 @@ function startQuiz(personId,isReview=false,reviewQs=null){
     questions=[...pool].sort(()=>Math.random()-.5).slice(0,Math.min(5,pool.length)).map(q=>shuffleChoices(q));
   }
   if(!questions.length){showToast('この人物の問題は準備中です');return;}
-  quizState={type:'person',personId,person,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview};
+  quizState={type:'person',personId,person,questions,current:0,results:[],earnedXP:0,answered:false,advancing:false,wrongQs:[],isReview,returnToReview:fromSavedReview};
   document.getElementById('quiz-screen').classList.remove('quiz-era');
   comboCount=0; updateCombo();
 
@@ -1890,8 +1955,10 @@ function answer(correct,clickedBtn,q,choicesEl){
   quizState.answered=true;
   quizState.results.push(correct);
 
-  const progress=quizState.type==='era'?eraSave(quizState.eraId):personSave(quizState.personId);
-  progress.total++; if(correct)progress.correct++; persist();
+  const questionType=q.eraId?'era':'person';
+  const progress=questionType==='era'?eraSave(q.eraId):personSave(q.personId);
+  progress.total++; if(correct)progress.correct++;
+  recordReviewAnswer(q,correct); persist();
 
   const btns=choicesEl.querySelectorAll('.choice');
   btns.forEach((b,i)=>{ b.disabled=true; if(i===q.answer)b.classList.add('ans-ok'); });
@@ -1928,8 +1995,11 @@ function answer(correct,clickedBtn,q,choicesEl){
     fb.textContent=nearPerfect?'😣 おしい！あと1問で全問正解だった！':'❌ 不正解…';
   }
   document.getElementById('feedback-area').appendChild(fb);
-  if(quizState.type==='era'&&q.explanation){
-    const ex=document.createElement('div');ex.className='fb-explanation';ex.textContent=`📘 解説：${q.explanation}`;document.getElementById('feedback-area').appendChild(ex);
+  const explanation=quizState.type==='era'?(q.explanation||''):getPersonExplanation(q);
+  if(explanation){
+    const ex=document.createElement('div');ex.className='fb-explanation';
+    ex.textContent=quizState.type==='era'?`📘 解説：${explanation}`:`📘 解説：正解は「${q.choices[q.answer]}」です。${explanation}`;
+    document.getElementById('feedback-area').appendChild(ex);
   }
 
   const nextBtn=document.getElementById('next-btn');
