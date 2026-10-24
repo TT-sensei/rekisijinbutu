@@ -114,7 +114,7 @@ function moveDrag(event){
 }
 function endDrag(event){
  if(!activeDrag||event.pointerId!==activeDrag.pointerId)return;
- const drag=activeDrag;document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointercancel',cancelDrag);
+ const drag=activeDrag;document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointerup',endDrag);document.removeEventListener('pointercancel',cancelDrag);
  const under=document.elementFromPoint(event.clientX,event.clientY);
  const found=under?under.closest('.slot'):null;
  const target=found&&!found.disabled?found:null;
@@ -125,7 +125,7 @@ function endDrag(event){
 }
 function cancelDrag(event){
  if(!activeDrag||(event&&event.pointerId!==activeDrag.pointerId))return;
- document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointerup',endDrag);
+ document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointerup',endDrag);document.removeEventListener('pointercancel',cancelDrag);
  if(activeDropSlot){activeDropSlot.classList.remove('drop-target');activeDropSlot.closest('.event')?.classList.remove('drag-over')}
  activeDropSlot=null;activeDrag.card.classList.remove('dragging');activeDrag.ghost?.remove();activeDrag=null;
 }
