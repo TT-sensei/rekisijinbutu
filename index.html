@@ -1160,6 +1160,19 @@ body::before{
   .fb-explanation{padding:9px 12px;font-size:1rem;line-height:1.55;max-height:22vh}
 }
 
+
+
+/* 全体の文字を少し大きく：rem基準で見出し・説明・小さなラベルもまとめて読みやすく */
+html{font-size:17px}
+@media(max-width:560px){html{font-size:16.5px}}
+/* 小さくなりやすい補助情報も読みやすさを確保 */
+#logo-lv,.hud-pill,.cf-btn,.coll-ct-label,.stat-label,.modal-stat-label,
+.p-badge,.p-kana,.era-period,.era-prog-text,.history-period,
+.history-description,.history-stats,.history-status,.quiz-mode-badge,.q-num,
+.title-ruby,#daily-status,.title-sub-link{
+  font-size:max(0.74rem,1em);
+}
+
 </style>
 </head>
 <body>
