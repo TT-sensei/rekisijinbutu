@@ -51,7 +51,7 @@ function renderEvents(){
  $('events').querySelectorAll('.slot').forEach(b=>{b.classList.toggle('filled',usedPeople.has(b.dataset.event));b.classList.toggle('selected',selectedEvent===b.dataset.event);b.addEventListener('click',()=>{if(answered||usedPeople.has(b.dataset.event))return;selectedEvent=b.dataset.event;renderEvents();renderPeople();$('feedback').className='feedback';$('feedback').textContent='人物カードから、出来事に関係する人を選ぼう。'})});
 }
 function renderPeople(){
- $('people').innerHTML=personOptions.map(p=>'<button class="person '+(selectedEvent===p.id?'active':'')+'" data-person="'+p.id+'" '+(usedPeople.has(p.id)||answered?'disabled':'')+'><img src="../assets/people/'+p.icon+'.png" alt=""><span><span class="person-name">'+p.name+'</span><span class="person-era">'+p.era+'</span></span><span class="drag-grip" data-drag-handle="'+p.id+'" role="button" aria-label="'+p.name+'をドラッグ" title="つかんでドラッグ">⠿</span></button>').join('');
+ $('people').innerHTML=personOptions.map(p=>'<button class="person '+(selectedEvent===p.id?'active':'')+'" data-person="'+p.id+'" '+(usedPeople.has(p.id)||answered?'disabled':'')+'><img src="../assets/people/'+p.icon+'.png" alt=""><span><span class="person-name">'+p.name+'</span><span class="person-era">'+p.era+'</span></span><span class="drag-grip" data-drag-handle="'+p.id+'" aria-label="'+p.name+'をドラッグ" title="つかんでドラッグ">⠿</span></button>').join('');
  $('people').querySelectorAll('.person').forEach(b=>{
   b.addEventListener('click',()=>{if(Date.now()<suppressClickUntil)return;choosePerson(b.dataset.person)});
   const handle=b.querySelector('[data-drag-handle]');
@@ -82,8 +82,8 @@ function startDrag(event,card,handle){
  event.preventDefault();event.stopPropagation();
  activeDrag={id:card.dataset.person,startX:event.clientX,startY:event.clientY,pointerId:event.pointerId,card,dragging:false,ghost:null};
  document.addEventListener('pointermove',moveDrag,{passive:false});
- document.addEventListener('pointerup',endDrag,{once:true});
- document.addEventListener('pointercancel',cancelDrag,{once:true});
+ document.addEventListener('pointerup',endDrag);
+ document.addEventListener('pointercancel',cancelDrag);
 }
 function moveDrag(event){
  if(!activeDrag||event.pointerId!==activeDrag.pointerId)return;
@@ -107,14 +107,16 @@ function moveDrag(event){
 function endDrag(event){
  if(!activeDrag||event.pointerId!==activeDrag.pointerId)return;
  const drag=activeDrag;document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointercancel',cancelDrag);
- const target=activeDropSlot;
+ const under=document.elementFromPoint(event.clientX,event.clientY);
+ const found=under?under.closest('.slot'):null;
+ const target=found&&!found.disabled?found:null;
  if(activeDropSlot){activeDropSlot.classList.remove('drop-target');activeDropSlot.closest('.event')?.classList.remove('drag-over')}
  activeDropSlot=null;
  drag.card.classList.remove('dragging');drag.ghost?.remove();activeDrag=null;
  if(drag.dragging){suppressClickUntil=Date.now()+500;event.preventDefault();if(target&&!target.disabled){matchPersonToEvent(target.dataset.event,drag.id)}else{$('feedback').className='feedback show ng';$('feedback').textContent='人物カードを出来事の枠までドラッグして、そこで指をはなしてね。'}}
 }
 function cancelDrag(event){
- if(!activeDrag)return;
+ if(!activeDrag||(event&&event.pointerId!==activeDrag.pointerId))return;
  document.removeEventListener('pointermove',moveDrag);document.removeEventListener('pointerup',endDrag);
  if(activeDropSlot){activeDropSlot.classList.remove('drop-target');activeDropSlot.closest('.event')?.classList.remove('drag-over')}
  activeDropSlot=null;activeDrag.card.classList.remove('dragging');activeDrag.ghost?.remove();activeDrag=null;
