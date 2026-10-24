@@ -28,11 +28,11 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 <header><a class="home-link" href="../">← 歴史探偵団</a><strong>歴史のじゅんばん</strong><a class="mode-link" href="../history-match/">🧩 人物と出来事をむすぶ</a></header>
 <main class="wrap">
 <div class="kicker">ならべかえにチャレンジ</div><h1>歴史のじゅんばん</h1>
-<p class="intro">人物カードを、古い時代から新しい時代の順に並べよう！ 名前やイラスト、「したこと」のヒントを手がかりにしてね。答え合わせでは、年代と出来事も確認できるよ。</p>
+<p class="intro">人物カードを、関係する出来事の年代が古い順に並べよう！ 人物が生きた順番ではなく、カードに書かれた出来事の年を比べるゲームだよ。答え合わせでは、出来事の説明も読んでみよう。</p>
 <section class="panel mode-panel" aria-label="遊び方を選ぶ"><p class="mode-title">時代をえらぼう</p><p class="mode-help">一つの時代で練習しても、いろいろな時代の人物にチャレンジしてもいいよ。</p><div class="mode-list" id="modeList"></div></section>
 <section class="panel">
 <div class="topline"><strong id="gameTitle">古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
-<p class="help">カード左の「⠿」をつかみ、別のカードの上か下へドラッグして順番を変えよう。右の「↑ ↓」でも動かせます。答え合わせでは人物に関係する代表的な出来事を確認できます。同じ年の人物は、どちらが先でも正解です。</p>
+<p class="help">カード左の「⠿」をつかみ、別のカードの上か下へ動かして順番を変えよう。右の「↑ ↓」でも動かせるよ。カードは人物の生きた順ではなく、書かれた出来事の年代で比べます。同じ年の出来事は、どちらが先でも正解です。</p>
 <div class="cards" id="cards" aria-live="polite"></div>
 <div class="actions"><button class="btn primary" id="check">順番をチェック</button><button class="btn secondary" id="reset">並べ直す</button></div>
 <div class="feedback" id="feedback" role="status"></div><button class="btn next" id="next">つぎの問題へ →</button>
@@ -41,11 +41,12 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 let roundNo=1,answerOrder=[],cards=[],checked=false,selectedEra="完全ランダム";
 let activeDrag=null,dropTarget=null;
 const $=id=>document.getElementById(id);
+function gameEra(p){return p.id==="xavier"||p.id==="nobunaga"?"戦国":p.era}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function newRound(){
  checked=false;$('feedback').className='feedback';$('feedback').textContent='';$('next').classList.remove('show');$('check').disabled=false;
  const all=PEOPLE.filter(p=>HISTORY_DATES[p.id]&&Number.isFinite(HISTORY_DATES[p.id].year));
- const pool=selectedEra==="完全ランダム"?all:all.filter(p=>p.era===selectedEra);
+ const pool=selectedEra==="完全ランダム"?all:all.filter(p=>gameEra(p)===selectedEra);
  const questionCount=Math.min(5,pool.length);
  answerOrder=shuffle([...pool]).slice(0,questionCount).sort((a,b)=>HISTORY_DATES[a.id].year-HISTORY_DATES[b.id].year);
  cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';$('gameTitle').textContent=(selectedEra==="完全ランダム"?"いろいろな時代":selectedEra+"の人物")+"｜古い年代 → 新しい年代";render();
@@ -102,9 +103,9 @@ function cancelCardDrag(e){
 }
 function showAnswer(correct){
  const fb=$('feedback');fb.className='feedback show '+(correct?'ok':'ng');fb.replaceChildren();
- const intro=document.createElement('p');intro.textContent=correct?'正解！ 古い年代から新しい年代へ並べられたね。':'おしい！ 年代順を確認しよう。同じ年の人物は、どちらが先でも正解だよ。';fb.append(intro);
+ const intro=document.createElement('p');intro.textContent=correct?'正解！ 出来事の年代を古い順に並べられたね。':'おしい！ 出来事の年代を確認しよう。同じ年の出来事は、どちらが先でも正解だよ。';fb.append(intro);
  const list=document.createElement('ol');list.className='answer-list';
- answerOrder.forEach(p=>{const d=HISTORY_DATES[p.id];const li=document.createElement('li');li.className='answer-item';const img=document.createElement('img');img.src='../assets/people/'+p.icon+'.png';img.alt=p.name+'のイラスト';img.loading='lazy';img.onerror=()=>{img.style.display='none'};const info=document.createElement('div');const name=document.createElement('strong');name.textContent=p.name+'｜'+d.date;const event=document.createElement('small');event.textContent=d.event;info.append(name,event);li.append(img,info);list.append(li)});fb.append(list);
+ answerOrder.forEach(p=>{const d=HISTORY_DATES[p.id];const li=document.createElement('li');li.className='answer-item';const img=document.createElement('img');img.src='../assets/people/'+p.icon+'.png';img.alt=p.name+'のイラスト';img.loading='lazy';img.onerror=()=>{img.style.display='none'};const info=document.createElement('div');const name=document.createElement('strong');name.textContent=p.name+'｜'+d.date;const event=document.createElement('small');event.textContent=d.event;info.append(name,event);if(d.explanation){const note=document.createElement('small');note.className='answer-explanation';note.textContent=d.explanation;info.append(note)}li.append(img,info);list.append(li)});fb.append(list);
 }
 function check(){
  if(checked)return;checked=true;render();$('check').disabled=true;
@@ -115,7 +116,7 @@ $('reset').onclick=()=>{checked=false;cards=shuffle([...answerOrder]);$('feedbac
 $('next').onclick=()=>{roundNo++;newRound()};
 function buildModes(){
  const root=$('modeList');root.innerHTML='';
- const eras=[...new Set(PEOPLE.map(p=>p.era))];
+ const eras=[...new Set(PEOPLE.map(gameEra))];
  const modes=[...eras,'完全ランダム'];
  modes.forEach(era=>{const b=document.createElement('button');b.type='button';b.className='mode-btn'+(era==='完全ランダム'?' random':'')+(era===selectedEra?' active':'');b.textContent=era==='完全ランダム'?'🌏 いろいろな時代':era;b.setAttribute('aria-pressed',String(era===selectedEra));b.onclick=()=>{selectedEra=era;roundNo=1;buildModes();newRound()};root.append(b)});
 }
