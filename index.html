@@ -9,6 +9,7 @@
 <script src="questions.js"></script>
 <script src="eras.js"></script>
 <script src="eraQuestions.js"></script>
+<script src="personExplanations.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700;800&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
@@ -185,6 +186,7 @@ body::before{
 #title-screen.active  { display:flex; flex-direction:column; align-items:center; justify-content:center; }
 #mode-screen.active   { display:block; }
 #history-era-screen.active { display:block; }
+#review-screen.active { display:block; }
 #era-screen.active    { display:block; }
 #people-screen.active { display:block; }
 #result-screen.active { display:block; }
@@ -298,6 +300,28 @@ body::before{
   transition:all .15s;
 }
 .title-sub-link:active{background:var(--surface2);color:var(--text)}
+.review-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:12px;background:var(--gold);color:#1b1d2a;font-size:.78rem;font-weight:900}
+#review-screen{padding:20px 16px 40px;max-width:820px;margin:0 auto}
+.review-summary{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;line-height:1.7}
+.review-groups{display:flex;flex-direction:column;gap:12px}
+.review-group{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.review-group-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.review-group-title{font-size:1.05rem;font-weight:900;color:var(--gold);line-height:1.4}
+.review-group-sub{font-size:.83rem;color:var(--subtext);margin-top:3px}
+.review-group-count{white-space:nowrap;font-size:.82rem;color:var(--subtext)}
+.review-question-list{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;padding-left:18px}
+.review-question-list li{font-size:.9rem;line-height:1.6}
+.review-question-meta{display:block;color:var(--subtext);font-size:.78rem}
+.review-start-btn{width:100%;min-height:52px;border:0;border-radius:12px;background:var(--gold);color:#171827;font:inherit;font-weight:900;cursor:pointer;padding:10px 14px}
+.review-empty{background:var(--surface);border:1px dashed var(--border);border-radius:16px;padding:24px 18px;text-align:center;line-height:1.8}
+.modal-fact-explanation{font-size:.88rem;line-height:1.7;color:var(--text);margin-top:8px;padding-top:7px;border-top:1px solid var(--border)}
+.modal-era-links-lead{font-size:.9rem;color:var(--subtext);line-height:1.6;margin-bottom:10px}
+.modal-era-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.modal-era-link{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px;min-height:70px;font:inherit;cursor:pointer}
+.modal-era-link strong{font-size:.95rem;line-height:1.4}
+.modal-era-link span{font-size:.8rem;color:var(--subtext);line-height:1.5}
+.modal-era-link:active{border-color:var(--gold);transform:scale(.99)}
+@media(max-width:560px){.modal-era-links{grid-template-columns:1fr}.review-group-head{gap:6px}.review-group{padding:12px}}
 
 /* ═══════════════════════════════════════════
    2. 時代選択 ERA SCREEN
@@ -1256,6 +1280,7 @@ html{font-size:17px}
       <p id="daily-status"></p>
       <div class="title-sub-links">
         <button class="title-sub-link" onclick="showCollection()">🏆 コレクションを見る</button>
+        <button class="title-sub-link" id="review-open-btn" onclick="showReviewScreen()">🔁 まちがいノート <span id="review-count-badge" class="review-count-badge">0</span></button>
         <a class="title-sub-link" href="history-match/" style="display:inline-flex;align-items:center;text-decoration:none">🧩 人物と出来事をむすぼう</a>
         <a class="title-sub-link" href="history-order/" style="display:inline-flex;align-items:center;text-decoration:none">↕️ 歴史のじゅんばん</a>
       </div>
@@ -1267,7 +1292,7 @@ html{font-size:17px}
   <div id="mode-screen" class="screen">
     <div class="screen-title">学び方を選ぼう</div><div class="screen-sub">どちらの入口から歴史を調査する？</div>
     <div class="mode-grid">
-      <button class="mode-card" onclick="showEra()"><span class="mode-icon">👤</span><span class="mode-name">人物から学ぶ</span><span class="mode-desc">42人の歴史人物にちょうせん</span></button>
+      <button class="mode-card" onclick="showEra()"><span class="mode-icon">👤</span><span class="mode-name">人物から学ぶ</span><span class="mode-desc">歴史人物にちょうせん</span></button>
       <button class="mode-card" onclick="showHistoryEras()"><span class="mode-icon">🏺</span><span class="mode-name">時代から学ぶ</span><span class="mode-desc">くらし・文化・遺跡から歴史を学ぶ</span></button>
     </div>
   </div>
@@ -1286,7 +1311,15 @@ html{font-size:17px}
     <div class="history-list" id="history-era-list"></div>
   </div>
 
-  <!-- ⑤ PEOPLE -->
+  <!-- ⑤ 間違いノート：端末内に保存した問題を後日も復習できる -->
+  <div id="review-screen" class="screen">
+    <div class="screen-title">🔁 まちがいノート</div>
+    <div class="screen-sub">間違えた問題はこの端末に保存されます。正解できた問題はノートから外れます。</div>
+    <div id="review-summary" class="review-summary"></div>
+    <div id="review-groups" class="review-groups"></div>
+  </div>
+
+  <!-- ⑥ PEOPLE -->
   <div id="people-screen" class="screen">
     <div id="people-heading">👤 人物を選ぼう</div>
     <div id="people-subhead" class="screen-sub">タップして、クイズにちょうせん！</div>
@@ -1370,6 +1403,11 @@ html{font-size:17px}
     <section class="modal-facts-section" aria-labelledby="modal-facts-title">
       <h3 class="modal-section-title" id="modal-facts-title">この人物をもっと知ろう</h3>
       <div class="modal-facts" id="modal-facts"></div>
+    </section>
+    <section class="modal-facts-section" aria-labelledby="modal-era-links-title">
+      <h3 class="modal-section-title" id="modal-era-links-title">この人物の時代を学ぶ</h3>
+      <p class="modal-era-links-lead" id="modal-era-links-lead"></p>
+      <div class="modal-era-links" id="modal-era-links"></div>
     </section>
     <div class="modal-gauge-section">
       <div class="modal-gauge-label">理解度（正解率）</div>
@@ -1670,7 +1708,7 @@ function buildMixCard(){
   const totalUnlocked = PEOPLE.filter(p=>personSave(p.id).unlocked).length;
   const allUnlocked = totalUnlocked === PEOPLE.length;
   const badgeCls = allUnlocked ? 'mix-card-badge mix-badge-ok' : 'mix-card-badge mix-badge-locked';
-  const badgeTxt = allUnlocked ? '✅ 解禁ずみ' : `🔒 全42人解放で解禁（${totalUnlocked}/42）`;
+  const badgeTxt = allUnlocked ? '✅ 解禁ずみ' : `🔒 全員解放で解禁（${totalUnlocked}/${PEOPLE.length}）`;
 
   area.innerHTML=`
     <div class="mix-card ${allUnlocked?'':'mix-locked'}" id="mix-card">
