@@ -14,7 +14,7 @@ header{display:flex;align-items:center;gap:12px;padding:14px max(16px,calc((100v
 header .brand{font-size:.85rem;color:var(--muted);flex:1;text-align:right}
 .wrap{width:min(100% - 28px,760px);margin:0 auto;padding:28px 0 48px}.kicker{font-size:.75rem;letter-spacing:.12em;color:var(--green);font-weight:900}
 h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red)}.intro{line-height:1.8;color:var(--muted);margin:0 0 22px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 18px #59472b0d}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 18px #59472b0d}.mode-panel{margin-bottom:16px}.mode-title{font-weight:900;margin:0 0 10px}.mode-help{font-size:.82rem;color:var(--muted);line-height:1.6;margin:0 0 12px}.mode-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mode-btn{min-height:44px;padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#fffaf0;color:var(--ink);font:inherit;font-weight:800;cursor:pointer}.mode-btn.active{background:var(--green);border-color:var(--green);color:#fff}.mode-btn.random{grid-column:1/-1;background:#f3e5c9}.mode-btn.random.active{background:var(--red);border-color:var(--red);color:#fff}@media(max-width:480px){.mode-list{grid-template-columns:repeat(2,minmax(0,1fr))}.mode-btn.random{grid-column:1/-1}}
 .topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.count{font-weight:900;color:var(--green)}.help{font-size:.82rem;line-height:1.6;color:var(--muted)}
 .cards{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .person{display:grid;grid-template-columns:30px 56px minmax(0,1fr) auto;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:84px}.person.dragging{opacity:.45;border:2px dashed var(--green)}.drag-handle{width:30px;height:44px;border:0;background:transparent;color:var(--muted);font-size:1.35rem;cursor:grab;touch-action:none;display:flex;align-items:center;justify-content:center}.drag-handle:active{cursor:grabbing}.drag-handle:disabled{opacity:.3;cursor:default}
@@ -30,22 +30,25 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 <main class="wrap">
 <div class="kicker">REKISHI CHRONO</div><h1>れきしクロノ</h1>
 <p class="intro">人物カードを、古い年代から新しい年代へ並べよう！ 名前とイラスト、「したこと」のヒントが手がかり。答え合わせでは、年代と出来事も確認できるよ。</p>
+<section class="panel mode-panel" aria-label="遊び方を選ぶ"><p class="mode-title">遊び方をえらぼう</p><p class="mode-help">同じ時代の人物で練習することも、時代をこえてチャレンジすることもできるよ。</p><div class="mode-list" id="modeList"></div></section>
 <section class="panel">
-<div class="topline"><strong>古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
+<div class="topline"><strong id="gameTitle">古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
 <p class="help">カード左の ⠿ をつかんでドラッグするか、右の ↑ ↓ ボタンで順番を変えられます。人物に関連する代表的な出来事の年代をもとに判定します。同じ年の人物は、どちらが先でも正解です。</p>
 <div class="cards" id="cards" aria-live="polite"></div>
 <div class="actions"><button class="btn primary" id="check">順番をチェック</button><button class="btn secondary" id="reset">並べ直す</button></div>
 <div class="feedback" id="feedback" role="status"></div><button class="btn next" id="next">つぎの問題へ →</button>
 </section></main>
 <script>
-let roundNo=1,answerOrder=[],cards=[],checked=false,draggedId=null;
+let roundNo=1,answerOrder=[],cards=[],checked=false,draggedId=null,selectedEra="完全ランダム";
 const $=id=>document.getElementById(id);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function newRound(){
  checked=false;$('feedback').className='feedback';$('feedback').textContent='';$('next').classList.remove('show');$('check').disabled=false;
- const pool=PEOPLE.filter(p=>HISTORY_DATES[p.id]&&Number.isFinite(HISTORY_DATES[p.id].year));
- answerOrder=shuffle([...pool]).slice(0,5).sort((a,b)=>HISTORY_DATES[a.id].year-HISTORY_DATES[b.id].year);
- cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';render();
+ const all=PEOPLE.filter(p=>HISTORY_DATES[p.id]&&Number.isFinite(HISTORY_DATES[p.id].year));
+ const pool=selectedEra==="完全ランダム"?all:all.filter(p=>p.era===selectedEra);
+ const questionCount=Math.min(5,pool.length);
+ answerOrder=shuffle([...pool]).slice(0,questionCount).sort((a,b)=>HISTORY_DATES[a.id].year-HISTORY_DATES[b.id].year);
+ cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';$('gameTitle').textContent=(selectedEra==="完全ランダム"?"完全ランダム":selectedEra+"の人物")+"｜古い年代 → 新しい年代";render();
 }
 function render(){
  const root=$('cards');root.innerHTML='';
@@ -75,6 +78,12 @@ function check(){
 $('check').onclick=check;
 $('reset').onclick=()=>{checked=false;cards=shuffle([...answerOrder]);$('feedback').className='feedback';$('next').classList.remove('show');$('check').disabled=false;render()};
 $('next').onclick=()=>{roundNo++;newRound()};
-if(typeof PEOPLE==='undefined'||!Array.isArray(PEOPLE)||typeof HISTORY_DATES==='undefined'){$('cards').textContent='人物データを読み込めませんでした。';$('check').disabled=true}else{newRound()}
+function buildModes(){
+ const root=$('modeList');root.innerHTML='';
+ const eras=[...new Set(PEOPLE.map(p=>p.era))];
+ const modes=[...eras,'完全ランダム'];
+ modes.forEach(era=>{const b=document.createElement('button');b.type='button';b.className='mode-btn'+(era==='完全ランダム'?' random':'')+(era===selectedEra?' active':'');b.textContent=era==='完全ランダム'?'🌏 完全ランダム':era;b.setAttribute('aria-pressed',String(era===selectedEra));b.onclick=()=>{selectedEra=era;roundNo=1;buildModes();newRound()};root.append(b)});
+}
+if(typeof PEOPLE==='undefined'||!Array.isArray(PEOPLE)||typeof HISTORY_DATES==='undefined'){$('cards').textContent='人物データを読み込めませんでした。';$('check').disabled=true}else{buildModes();newRound()}
 </script>
 </body></html>
