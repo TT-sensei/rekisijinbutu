@@ -1434,13 +1434,23 @@ function normalizeDataText(value){
 function validateData(){
   const warn=(message,detail)=>console.warn(`[データ確認] ${message}`,detail);
   const info=(message,detail)=>console.info(`[データ確認] ${message}`,detail);
-  const duplicateIds=(items,label)=>items.map(x=>x.id).filter((id,i,ids)=>ids.indexOf(id)!==i).forEach(id=>warn(`${label}IDの重複`,id));
+  const duplicateIds=(items,label)=>{
+    const ids=[];
+    items.forEach((item,index)=>{
+      if(!item||typeof item!=='object'||Array.isArray(item)){warn(`${label}データがオブジェクトではありません`,index+1);return;}
+      if(typeof item.id!=='string'||!item.id.trim())warn(`${label}IDが空です`,index+1);
+      ids.push(item.id);
+    });
+    ids.filter((id,index)=>ids.indexOf(id)!==index).forEach(id=>warn(`${label}IDの重複`,id));
+  };
   duplicateIds(PEOPLE,'人物'); duplicateIds(HISTORY_ERAS,'時代単元');
-  const personIds=new Set(PEOPLE.map(p=>p.id)),eraIds=new Set(HISTORY_ERAS.map(e=>e.id));
+  const personIds=new Set(PEOPLE.filter(p=>p&&typeof p==='object').map(p=>p.id));
+  const eraIds=new Set(HISTORY_ERAS.filter(e=>e&&typeof e==='object').map(e=>e.id));
   const allQuestions=[...QUESTIONS.map((q,i)=>({q,i,type:'人物'})),...ERA_QUESTIONS.map((q,i)=>({q,i,type:'時代'}))];
   const seenQuestions=new Map();
   allQuestions.forEach(({q,i,type})=>{
     const label=`${type}問題 #${i+1}`;
+    if(!q||typeof q!=='object'||Array.isArray(q)){warn('問題データがオブジェクトではありません',label);return;}
     if(type==='人物'&&!personIds.has(q.personId))warn('存在しないpersonId',{label,personId:q.personId});
     if(type==='時代'&&!eraIds.has(q.eraId))warn('存在しないeraId',{label,eraId:q.eraId});
     if(!q.q||typeof q.q!=='string'||!q.q.trim())warn('空の問題文',label);
@@ -1455,7 +1465,7 @@ function validateData(){
     const duplicateChoices=choiceKeys.map((value,index)=>({value,index})).filter(item=>item.value&&choiceKeys.indexOf(item.value)!==item.index);
     if(duplicateChoices.length)warn('同じ選択肢が重複しています',{label,choices:duplicateChoices.map(x=>choices[x.index])});
     if(!Number.isInteger(q.answer)||q.answer<0||q.answer>=choices.length)warn('answerが範囲外です',{label,answer:q.answer});
-    if(type==='時代'&&(!q.explanation||!q.explanation.trim()))warn('時代問題の空の解説',label);
+    if(type==='時代'&&(typeof q.explanation!=='string'||!q.explanation.trim()))warn('時代問題の空の解説',label);
     const normalizedQuestion=normalizeDataText(q.q);
     if(normalizedQuestion){
       if(seenQuestions.has(normalizedQuestion))warn('同じ問題文（表記違いを含む）が重複しています',[seenQuestions.get(normalizedQuestion),label]);
@@ -1468,10 +1478,11 @@ function validateData(){
         warn('選択肢の長さに大きな差があります（正解を推測しやすくないか確認）',{label,lengths,choices});
     }
   });
-  PEOPLE.forEach(p=>{const count=QUESTIONS.filter(q=>q.personId===p.id).length;if(count<5)warn('人物の問題数が少ない',{person:p.name,count});});
-  HISTORY_ERAS.forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q.eraId===e.id).length;if(count<5)warn('時代単元の問題数が少ない',{era:e.name,id:e.id,count});});
-  PERSON_EXPLANATION_RULES.forEach(rule=>{
-    if(!QUESTIONS.some(q=>q.personId===rule.personId&&q.q.includes(rule.match)))
+  PEOPLE.filter(p=>p&&typeof p==='object').forEach(p=>{const count=QUESTIONS.filter(q=>q&&q.personId===p.id).length;if(count<5)warn('人物の問題数が少ない',{person:p.name,count});});
+  HISTORY_ERAS.filter(e=>e&&typeof e==='object').forEach(e=>{const count=ERA_QUESTIONS.filter(q=>q&&q.eraId===e.id).length;if(count<5)warn('時代単元の問題数が少ない',{era:e.name,id:e.id,count});});
+  PERSON_EXPLANATION_RULES.forEach((rule,index)=>{
+    if(!rule||typeof rule!=='object'){warn('人物解説ルールが不正です',index+1);return;}
+    if(!QUESTIONS.some(q=>q&&q.personId===rule.personId&&typeof q.q==='string'&&q.q.includes(rule.match)))
       warn('解説ルールと一致する人物問題がありません',{personId:rule.personId,match:rule.match});
   });
   const coreWithExplanation=QUESTIONS.filter(q=>getPersonExplanation(q)).length;
