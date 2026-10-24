@@ -1429,7 +1429,7 @@ html{font-size:17px}
 // 1. 整合性チェック
 // ══════════════════════
 function normalizeDataText(value){
-  return String(value==null?'':value).normalize('NFKC').toLowerCase().replace(/[\\s、。・（）()「」『』【】！？!?：:,.]/g,'');
+  return String(value==null?'':value).normalize('NFKC').toLowerCase().replace(/[\s、。・（）()「」『』【】！？!?：:,.]/g,'');
 }
 function validateData(){
   const warn=(message,detail)=>console.warn(`[データ確認] ${message}`,detail);
@@ -1479,7 +1479,7 @@ function validateData(){
   info('正解位置の偏り検査は省略しました','出題時に選択肢を毎回シャッフルするため、元データのanswer番号だけでは偏りを判定できません。');
 }
 window.validateData=validateData;
-validateData();;
+validateData();
 
 // ══════════════════════
 // 2. SAVE
