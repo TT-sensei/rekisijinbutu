@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5efe2">
-<title>れきしクロノ｜歴史の順番にチャレンジ</title>
+<title>歴史のじゅんばんチャレンジ｜歴史探偵団</title>
 <script src="../people.js"></script>
 <script src="./dates.js"></script>
 <style>
@@ -25,11 +25,11 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 </style>
 </head>
 <body>
-<header><a class="home-link" href="../">← 歴史探偵団</a><strong>れきしクロノ</strong><a class="mode-link" href="../history-match/">🧩 れきしマッチへ</a></header>
+<header><a class="home-link" href="../">← 歴史探偵団</a><strong>歴史のじゅんばん</strong><a class="mode-link" href="../history-match/">🧩 人物と出来事をむすぶ</a></header>
 <main class="wrap">
-<div class="kicker">REKISHI CHRONO</div><h1>れきしクロノ</h1>
-<p class="intro">人物カードを、古い年代から新しい年代へ並べよう！ 名前とイラスト、「したこと」のヒントが手がかり。答え合わせでは、年代と出来事も確認できるよ。</p>
-<section class="panel mode-panel" aria-label="遊び方を選ぶ"><p class="mode-title">遊び方をえらぼう</p><p class="mode-help">同じ時代の人物で練習することも、時代をこえてチャレンジすることもできるよ。</p><div class="mode-list" id="modeList"></div></section>
+<div class="kicker">ならべかえにチャレンジ</div><h1>歴史のじゅんばん</h1>
+<p class="intro">人物カードを、古い時代から新しい時代の順に並べよう！ 名前やイラスト、「したこと」のヒントを手がかりにしてね。答え合わせでは、年代と出来事も確認できるよ。</p>
+<section class="panel mode-panel" aria-label="遊び方を選ぶ"><p class="mode-title">時代をえらぼう</p><p class="mode-help">一つの時代で練習しても、いろいろな時代の人物にチャレンジしてもいいよ。</p><div class="mode-list" id="modeList"></div></section>
 <section class="panel">
 <div class="topline"><strong id="gameTitle">古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
 <p class="help">カード左の「⠿」をつかみ、別のカードの上か下へドラッグして順番を変えよう。右の「↑ ↓」でも動かせます。答え合わせでは人物に関係する代表的な出来事を確認できます。同じ年の人物は、どちらが先でも正解です。</p>
@@ -48,7 +48,7 @@ function newRound(){
  const pool=selectedEra==="完全ランダム"?all:all.filter(p=>p.era===selectedEra);
  const questionCount=Math.min(5,pool.length);
  answerOrder=shuffle([...pool]).slice(0,questionCount).sort((a,b)=>HISTORY_DATES[a.id].year-HISTORY_DATES[b.id].year);
- cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';$('gameTitle').textContent=(selectedEra==="完全ランダム"?"完全ランダム":selectedEra+"の人物")+"｜古い年代 → 新しい年代";render();
+ cards=shuffle([...answerOrder]);$('round').textContent='第'+roundNo+'回';$('gameTitle').textContent=(selectedEra==="完全ランダム"?"いろいろな時代":selectedEra+"の人物")+"｜古い年代 → 新しい年代";render();
 }
 function render(){
  const root=$('cards');root.innerHTML='';
@@ -117,7 +117,7 @@ function buildModes(){
  const root=$('modeList');root.innerHTML='';
  const eras=[...new Set(PEOPLE.map(p=>p.era))];
  const modes=[...eras,'完全ランダム'];
- modes.forEach(era=>{const b=document.createElement('button');b.type='button';b.className='mode-btn'+(era==='完全ランダム'?' random':'')+(era===selectedEra?' active':'');b.textContent=era==='完全ランダム'?'🌏 完全ランダム':era;b.setAttribute('aria-pressed',String(era===selectedEra));b.onclick=()=>{selectedEra=era;roundNo=1;buildModes();newRound()};root.append(b)});
+ modes.forEach(era=>{const b=document.createElement('button');b.type='button';b.className='mode-btn'+(era==='完全ランダム'?' random':'')+(era===selectedEra?' active':'');b.textContent=era==='完全ランダム'?'🌏 いろいろな時代':era;b.setAttribute('aria-pressed',String(era===selectedEra));b.onclick=()=>{selectedEra=era;roundNo=1;buildModes();newRound()};root.append(b)});
 }
 if(typeof PEOPLE==='undefined'||!Array.isArray(PEOPLE)||typeof HISTORY_DATES==='undefined'){$('cards').textContent='人物データを読み込めませんでした。';$('check').disabled=true}else{buildModes();newRound()}
 </script>
