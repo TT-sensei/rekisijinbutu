@@ -2064,6 +2064,9 @@ function buildCollection(){
     const color=gaugeColor(pct);
     const card=document.createElement('div');
     card.className='cc '+(isM?'cc-mastered':isU?'cc-unlocked':'cc-locked');
+    card.setAttribute('role','button');
+    card.tabIndex=0;
+    card.setAttribute('aria-label',isU?`${p.name}の人物詳細を開く`:`未解放の人物。タップして人物紹介を見る`);
     card.innerHTML=`
       <img class="cc-person-img${isU?'':' locked'}" src="assets/people/${p.icon}.png" alt="${isU?p.name+'のイラスト':'未解放の人物'}" loading="lazy">
       <div class="cc-name">${isU?p.name:'？？？？'}</div>
@@ -2071,9 +2074,11 @@ function buildCollection(){
       <span class="cc-era">${p.era}</span>
       ${isU?`<div class="cc-gauge-wrap"><div class="cc-gauge" style="width:${pct}%;background:${color}"></div></div>`:''}
       ${cnt>0?`<div class="cc-clear-badge">${cnt}回</div>`:''}
-      ${!isU?`<div class="cc-lock-icon">🔒</div>`:''}
+      ${!isU?`<div class="cc-lock-icon" aria-label="未解放">🔒</div>`:''}
     `;
-    if(isU) card.onclick=()=>openModal(p.id);
+    // 未解放でも人物紹介は読める。画像の鍵・ぼかしと「？？？？」表示は維持。
+    card.onclick=()=>openModal(p.id);
+    card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModal(p.id);}};
     grid.appendChild(card);
   });
 }
@@ -2083,9 +2088,10 @@ function openModal(personId){
   const ps=personSave(personId);
   const pct=ps.total>0?Math.round(ps.correct/ps.total*100):0;
   const color=gaugeColor(pct);
-  document.getElementById('modal-emoji').innerHTML=`<img class="modal-person-img" src="assets/people/${p.icon}.png" alt="${p.name}のイラスト">`;
-  document.getElementById('modal-name').textContent=p.name;
-  document.getElementById('modal-kana').textContent=p.kana;
+  const unlocked=!!ps.unlocked;
+  document.getElementById('modal-emoji').innerHTML=`<img class="modal-person-img${unlocked?'':' locked'}" src="assets/people/${p.icon}.png" alt="${unlocked?p.name+'のイラスト':'未解放の人物イラスト'}">`;
+  document.getElementById('modal-name').textContent=unlocked?p.name:'？？？？';
+  document.getElementById('modal-kana').textContent=unlocked?p.kana:'解放すると名前が表示されます';
   document.getElementById('modal-era').textContent=p.era+'時代';
   document.getElementById('modal-hint').textContent=p.hint;
   // その人物のクイズデータから、人物について知るための事実を幅広く表示する。
@@ -2115,10 +2121,15 @@ function openModal(personId){
     factsEl.textContent='この人物の詳しい情報は、これから追加していきます。';
   }
   document.getElementById('modal-gauge-bar').style.cssText=`width:${pct}%;background:${color}`;
-  document.getElementById('modal-gauge-pct').textContent=`${pct}%（${ps.correct}/${ps.total}問正解）`;
+  document.getElementById('modal-gauge-pct').textContent=unlocked?`${pct}%（${ps.correct}/${ps.total}問正解）`:'クイズに挑戦して理解度を高めよう';
   document.getElementById('modal-clear').textContent=ps.cleared+'回';
   document.getElementById('modal-correct-rate').textContent=`${ps.correct}/${ps.total}`;
-  document.getElementById('modal-play-btn').onclick=()=>{ closeModal(); startQuiz(personId); };
+  const gaugeSection=document.querySelector('#coll-modal .modal-gauge-section');
+  gaugeSection.style.display=unlocked?'':'none';
+  document.querySelector('#coll-modal .modal-stats').style.display=unlocked?'':'none';
+  const playBtn=document.getElementById('modal-play-btn');
+  playBtn.textContent=unlocked?'クイズに挑戦！':'この人物にちょうせんして解放';
+  playBtn.onclick=()=>{ closeModal(); startQuiz(personId); };
   document.getElementById('coll-modal-bg').classList.add('show');
 }
 function closeModal(e){
