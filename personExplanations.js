@@ -108,7 +108,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "imoko",
-    "match": "中国の進んだ文化や制度を学ぶ",
+    "match": "遣隋使が送られた目的として正しいのは",
     "explanation": "遣隋使は、政治の仕組みや文化、仏教などを学ぶために派遣されました。後の遣唐使にもつながる、大陸との重要な交流です。"
   },
   {
@@ -153,12 +153,12 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "tenchi",
-    "match": "後継ぎをめぐっておきた内乱",
+    "match": "中大兄皇子の死後、後継ぎ",
     "explanation": "壬申の乱は672年に起きた皇位継承をめぐる争いです。勝利した大海人皇子は、後に天武天皇となりました。"
   },
   {
     "personId": "tenchi",
-    "match": "大化の改新の目的",
+    "match": "大化の改新の「改新",
     "explanation": "中大兄皇子と中臣鎌足らは、蘇我氏の強い影響を改め、天皇を中心に国をまとめることを目指しました。"
   },
   {
@@ -173,7 +173,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "kamatari",
-    "match": "藤原不比等",
+    "match": "鎌足の息子",
     "explanation": "藤原不比等は中臣鎌足の子で、律令制度の整備などに関わりました。藤原氏が後に政治の中心で力を持つ土台を築いた人物です。"
   },
   {
@@ -288,7 +288,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "tokimune",
-    "match": "撃退した外国の大軍",
+    "match": "北条時宗が撃退",
     "explanation": "元寇は、モンゴル帝国の勢力が築いた元などが日本に攻めてきた戦いです。鎌倉幕府は御家人を動員して防ぎました。"
   },
   {
@@ -328,17 +328,17 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "nobunaga",
-    "match": "楽市楽座",
+    "match": "信長が行った",
     "explanation": "楽市楽座は、商売の自由を広げ、城下町や市場を活発にしようとした政策です。地域や時期によって内容に違いがありました。"
   },
   {
     "personId": "hideyoshi",
-    "match": "刀狩り",
+    "match": "秀吉が農民の武器",
     "explanation": "刀狩りは農民などから武器を取り上げる政策です。兵農分離を進め、武士と農民の身分・役割を分ける動きにつながりました。"
   },
   {
     "personId": "hideyoshi",
-    "match": "太閤検地",
+    "match": "秀吉が土地の広さ",
     "explanation": "太閤検地では、田畑の面積や土地の質、収穫量などを調べ、年貢を集める基準を整えました。全国統一した支配を進めるための政策です。"
   },
   {
@@ -358,7 +358,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "ieyasu",
-    "match": "豊臣氏に最後に勝った戦い",
+    "match": "家康が豊臣氏",
     "explanation": "大坂の陣は豊臣氏と徳川氏の最後の大きな戦いです。1615年の大坂夏の陣で豊臣氏が滅び、徳川氏による支配がより安定しました。"
   },
   {
@@ -373,7 +373,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "iemitsu",
-    "match": "鎖国で交流が許された国",
+    "match": "鎖国（さこく）で交流が許された国として正しいのは",
     "explanation": "江戸時代も長崎などを窓口に、オランダや中国との貿易が続きました。幕府は貿易相手や場所を制限し、海外情報を管理しました。"
   },
   {
@@ -388,7 +388,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "norinaga",
-    "match": "古事記の研究書",
+    "match": "本居宣長が書いた",
     "explanation": "『古事記伝』は本居宣長が『古事記』を詳しく研究した書物です。日本の古典を読み解く国学の発展を代表します。"
   },
   {
@@ -413,7 +413,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "tadataka",
-    "match": "55歳",
+    "match": "忠敬が本格的に測量",
     "explanation": "伊能忠敬は50歳を過ぎてから本格的に測量を始めました。長年の学び直しと粘り強い測量によって、精度の高い地図づくりを進めました。"
   },
   {
@@ -423,17 +423,17 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "perry",
-    "match": "黒船",
+    "match": "ペリーが率いてきた船",
     "explanation": "黒船は、当時の日本の船とは外観や技術が違う西洋の船を指す呼び名です。ペリーの蒸気船は幕府や人々に大きな衝撃を与えました。"
   },
   {
     "personId": "perry",
-    "match": "日本に港を開くこと",
+    "match": "ペリーが日本に来た目的として正しいのは",
     "explanation": "ペリーの目的は、アメリカ船の補給などのために日本に港を開かせることでした。交渉の結果、日米和親条約が結ばれ、日本は開国へ向かいました。"
   },
   {
     "personId": "kaishu",
-    "match": "江戸城の無血開城",
+    "match": "勝海舟が西郷隆盛",
     "explanation": "勝海舟と西郷隆盛らの交渉により、1868年、江戸城は大きな戦闘を避けて新政府側に引き渡されました。江戸の町や人々への被害を抑えるうえで重要な出来事でした。"
   },
   {
@@ -453,7 +453,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "meiji",
-    "match": "大日本帝国憲法",
+    "match": "明治天皇が1889年に発布",
     "explanation": "大日本帝国憲法は1889年に発布され、1890年に帝国議会が開かれました。明治時代に近代国家の制度が整えられていった流れと結びつきます。"
   },
   {
@@ -468,7 +468,7 @@ const PERSON_EXPLANATION_RULES = [
   },
   {
     "personId": "fukuzawa",
-    "match": "学問のすすめ",
+    "match": "福沢諭吉が書いた有名な本",
     "explanation": "『学問のすすめ』は福沢諭吉が学ぶことの大切さを説いた本です。身分にとらわれず、学問を通して自立した人になる考えを広めました。"
   },
   {
