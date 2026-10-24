@@ -2088,8 +2088,12 @@ function showResult(){
   }
 
   const back=document.createElement('button');
-  back.className='btn btn-secondary'; back.textContent='ほかの人物へ';
-  back.onclick=()=>{screenStack=screenStack.filter(id=>id!=='quiz-screen'&&id!=='result-screen');renderPeopleGrid();showScreen('people-screen',false);};
+  back.className='btn btn-secondary'; back.textContent=quizState.returnToReview?'まちがいノートへ':'ほかの人物へ';
+  back.onclick=()=>{
+    screenStack=screenStack.filter(id=>id!=='quiz-screen'&&id!=='result-screen');
+    if(quizState.returnToReview){buildReviewScreen();showScreen('review-screen',false);}
+    else {renderPeopleGrid();showScreen('people-screen',false);}
+  };
   btnsEl.appendChild(back);
 
   showScreen('result-screen');
@@ -2111,7 +2115,7 @@ function showEraResult(){
   const btns=document.getElementById('result-btns');btns.innerHTML='';
   const again=document.createElement('button');again.className='btn btn-primary';again.textContent='もう一度';again.onclick=()=>startEraQuiz(eraId);btns.appendChild(again);
   if(wrongQs.length&&!isReview){const rev=document.createElement('button');rev.className='btn btn-review';rev.textContent=`🔄 まちがい復習（${wrongQs.length}問）`;rev.onclick=()=>startEraQuiz(eraId,true,wrongQs);btns.appendChild(rev);}
-  const back=document.createElement('button');back.className='btn btn-secondary';back.textContent='ほかの時代へ';back.onclick=()=>{screenStack=screenStack.filter(id=>id!=='quiz-screen'&&id!=='result-screen');buildHistoryEraList();showScreen('history-era-screen',false);};btns.appendChild(back);
+  const back=document.createElement('button');back.className='btn btn-secondary';back.textContent=quizState.returnToReview?'まちがいノートへ':'ほかの時代へ';back.onclick=()=>{screenStack=screenStack.filter(id=>id!=='quiz-screen'&&id!=='result-screen');if(quizState.returnToReview){buildReviewScreen();showScreen('review-screen',false);}else{buildHistoryEraList();showScreen('history-era-screen',false);}};btns.appendChild(back);
   showScreen('result-screen');
 }
 
@@ -2136,7 +2140,62 @@ function closeSplash(){
 }
 
 // ══════════════════════
-// 13. COLLECTION
+// 13. SAVED REVIEW
+// ══════════════════════
+function showReviewScreen(){buildReviewScreen();showScreen('review-screen');}
+function buildReviewScreen(){
+  const host=document.getElementById('review-groups'),summary=document.getElementById('review-summary');
+  host.innerHTML='';
+  const entries=Array.isArray(save.reviewQuestions)?save.reviewQuestions:[];
+  summary.textContent=entries.length
+    ? `保存中：${entries.length}問。日をあけて何度も解き直せます。正解できた問題は自動でノートから外れます。`
+    : 'まだ保存された問題はありません。クイズで間違えた問題が、ここに自動で追加されます。';
+  if(!entries.length){
+    const empty=document.createElement('div');empty.className='review-empty';
+    empty.textContent='問題にちょうせんして、間違えた問題をここにためていこう。';
+    host.appendChild(empty);return;
+  }
+  const grouped=new Map();
+  entries.forEach(item=>{
+    const groupKey=`${item.type}|${item.entityId}`;
+    if(!grouped.has(groupKey))grouped.set(groupKey,[]);
+    grouped.get(groupKey).push(item);
+  });
+  [...grouped.entries()].forEach(([groupKey,items])=>{
+    const [type,entityId]=groupKey.split('|');
+    const entity=type==='person'?PEOPLE.find(p=>p.id===entityId):HISTORY_ERAS.find(e=>e.id===entityId);
+    const card=document.createElement('section');card.className='review-group';
+    const header=document.createElement('div');header.className='review-group-head';
+    const titleWrap=document.createElement('div');
+    const title=document.createElement('div');title.className='review-group-title';title.textContent=entity?entity.name:'学習項目';
+    const subtitle=document.createElement('div');subtitle.className='review-group-sub';subtitle.textContent=type==='person'?(`${entity?.era||''}時代・人物問題`):(`${entity?.period||''}・時代問題`);
+    titleWrap.append(title,subtitle);
+    const count=document.createElement('div');count.className='review-group-count';count.textContent=`${items.length}問`;
+    header.append(titleWrap,count);card.appendChild(header);
+    const ul=document.createElement('ol');ul.className='review-question-list';
+    items.forEach(item=>{
+      const li=document.createElement('li');li.textContent=item.question.q;
+      const meta=document.createElement('span');meta.className='review-question-meta';
+      meta.textContent=`まちがい ${item.wrongCount||1}回 ・ ${formatReviewDate(item.nextReviewAt)}`;
+      li.appendChild(meta);ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    const button=document.createElement('button');button.className='review-start-btn';
+    button.textContent=`この${items.length}問を復習する`;
+    button.onclick=()=>startSavedReviewGroup(type,entityId);
+    card.appendChild(button);host.appendChild(card);
+  });
+}
+function startSavedReviewGroup(type,entityId){
+  const entries=(save.reviewQuestions||[]).filter(item=>item.type===type&&item.entityId===entityId);
+  const questions=entries.map(item=>item.question).filter(q=>q&&Array.isArray(q.choices));
+  if(!questions.length){buildReviewScreen();showToast('復習する問題がありません');return;}
+  if(type==='person')startQuiz(entityId,true,questions,true);
+  else startEraQuiz(entityId,true,questions,true);
+}
+
+// ══════════════════════
+// 14. COLLECTION
 // ══════════════════════
 let collFilter='すべて';
 function showCollection(){ collFilter='すべて'; buildCollection(); showScreen('collection-screen'); }
@@ -2191,6 +2250,32 @@ function buildCollection(){
   });
 }
 
+const PERSON_ERA_LINKS={
+  himiko:['yayoi'],shotoku:['asuka'],imoko:['asuka'],tenchi:['asuka'],kamatari:['asuka'],
+  shomu:['nara'],gyoki:['nara'],ganjin:['nara'],
+  michinaga:['heian'],murasaki:['heian'],seishonagon:['heian'],kiyomori:['heian'],
+  yoritomo:['kamakura'],yoshitsune:['kamakura'],tokimune:['kamakura'],
+  takauji:['muromachi'],yoshimitsu:['muromachi'],yoshimasa:['muromachi'],sesshu:['muromachi'],
+  xavier:['azuchi-momoyama'],nobunaga:['azuchi-momoyama'],hideyoshi:['azuchi-momoyama'],
+  ieyasu:['edo-politics'],iemitsu:['edo-politics'],yoshimune:['edo-culture'],chikamatsu:['edo-culture'],hiroshige:['edo-culture'],norinaga:['edo-culture'],genpaku:['edo-culture'],tadataka:['edo-culture'],
+  perry:['edo-politics'],kaishu:['edo-politics'],takamori:['meiji-nation'],toshimichi:['meiji-nation'],takayoshi:['meiji-nation'],
+  meiji:['meiji-nation','meiji-industry'],fukuzawa:['meiji-nation','meiji-industry'],okuma:['meiji-nation'],itagaki:['meiji-nation'],hirobumi:['meiji-nation'],mutsu:['meiji-industry'],togo:['meiji-industry'],komura:['meiji-industry'],hideyo:['meiji-industry']
+};
+function buildPersonEraLinks(p){
+  const ids=PERSON_ERA_LINKS[p.id]||HISTORY_ERAS.filter(e=>e.era===p.era).map(e=>e.id);
+  const related=ids.map(id=>HISTORY_ERAS.find(e=>e.id===id)).filter(e=>e&&e.available);
+  const lead=document.getElementById('modal-era-links-lead'),host=document.getElementById('modal-era-links');
+  host.innerHTML='';
+  lead.textContent=related.length?'この人物が生きた時代の学習単元へ進み、政治・くらし・文化の流れをつなげよう。':'関連する時代単元は準備中です。';
+  related.forEach(era=>{
+    const button=document.createElement('button');button.className='modal-era-link';
+    const title=document.createElement('strong');title.textContent=`${era.emoji} ${era.name}`;
+    const subtitle=document.createElement('span');subtitle.textContent=`${era.subtitle}（${era.period}）`;
+    button.append(title,subtitle);
+    button.onclick=()=>{closeModal();startEraQuiz(era.id);};
+    host.appendChild(button);
+  });
+}
 function openModal(personId){
   const p=PEOPLE.find(x=>x.id===personId);
   const ps=personSave(personId);
@@ -2202,6 +2287,7 @@ function openModal(personId){
   document.getElementById('modal-kana').textContent=unlocked?p.kana:'解放すると名前が表示されます';
   document.getElementById('modal-era').textContent=p.era+'時代';
   document.getElementById('modal-hint').textContent=p.hint;
+  buildPersonEraLinks(p);
   // その人物のクイズデータから、人物について知るための事実を幅広く表示する。
   const personQuestions=QUESTIONS.filter(q=>q.personId===personId&&Array.isArray(q.choices)&&q.choices[q.answer]);
   const factsEl=document.getElementById('modal-facts');
@@ -2221,6 +2307,8 @@ function openModal(personId){
     answer.className='modal-fact-a';
     answer.textContent=q.choices[q.answer];
     fact.append(question,answer);
+    const detail=getPersonExplanation(q);
+    if(detail){const explanation=document.createElement('div');explanation.className='modal-fact-explanation';explanation.textContent=detail;fact.appendChild(explanation);}
     selectedFacts.push(fact);
   }
   if(selectedFacts.length){
