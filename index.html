@@ -1135,6 +1135,31 @@ body::before{
   .qdot.curr{animation:none}
 }
 
+
+
+/* 縦向きタブレット：選択肢は文字を大きく、ボタンの余白は控えめに */
+@media (orientation: portrait) and (min-width: 561px) {
+  #quiz-screen{
+    padding:12px 18px calc(14px + env(safe-area-inset-bottom));
+  }
+  .quiz-header{margin-bottom:9px;gap:10px}
+  .q-card{padding:15px 18px;margin-bottom:10px}
+  .q-num{margin-bottom:6px}
+  .q-text{font-size:clamp(1.3rem,2.6vw,1.6rem);line-height:1.55}
+  .choices{gap:7px}
+  .choice{
+    min-height:56px;
+    padding:8px 14px;
+    font-size:clamp(1.15rem,2.25vw,1.38rem);
+    line-height:1.4;
+    gap:12px;
+  }
+  .choice-ltr{width:30px;height:30px;font-size:.9rem}
+  #next-btn{min-height:50px;margin-top:9px;padding:10px 14px}
+  .fb-banner{padding:9px 13px}
+  .fb-explanation{padding:9px 12px;font-size:1rem;line-height:1.55;max-height:22vh}
+}
+
 </style>
 </head>
 <body>
