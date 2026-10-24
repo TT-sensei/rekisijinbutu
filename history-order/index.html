@@ -17,12 +17,12 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 18px #59472b0d}
 .topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.count{font-weight:900;color:var(--green)}.help{font-size:.82rem;line-height:1.6;color:var(--muted)}
 .cards{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.person{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:84px}
+.person{display:grid;grid-template-columns:30px 56px minmax(0,1fr) auto;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:84px}.person.dragging{opacity:.45;border:2px dashed var(--green)}.drag-handle{width:30px;height:44px;border:0;background:transparent;color:var(--muted);font-size:1.35rem;cursor:grab;touch-action:none;display:flex;align-items:center;justify-content:center}.drag-handle:active{cursor:grabbing}.drag-handle:disabled{opacity:.3;cursor:default}
 .person img{width:56px;height:56px;object-fit:cover;border-radius:10px;background:#eee4cf}.person-name{font-weight:900;font-size:1.03rem}.person-hint{font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:3px}
 .move{display:flex;flex-direction:column;gap:5px}.move button{width:38px;height:32px;border:1px solid var(--line);border-radius:8px;background:#f8f1e3;font-size:1rem;cursor:pointer}.move button:disabled{opacity:.25}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:10px;padding:13px 18px;font:inherit;font-weight:900;cursor:pointer;min-height:48px}.primary{background:var(--red);color:white;flex:1}.secondary{background:#eee3cc;color:var(--ink)}
 .feedback{display:none;margin-top:14px;padding:14px;border-radius:10px;line-height:1.8;font-weight:800}.feedback.show{display:block}.feedback.ok{background:#e4f0e6;color:#28583f;border:1px solid #9cbca5}.feedback.ng{background:#fff0e8;color:#873e2d;border:1px solid #d8a18d}.next{display:none;width:100%;margin-top:10px;background:var(--green);color:#fff}.next.show{display:block}
-@media(max-width:480px){.wrap{padding-top:20px}.panel{padding:12px}.person{grid-template-columns:46px minmax(0,1fr) auto;gap:9px;padding:8px}.person img{width:46px;height:46px}.person-name{font-size:.95rem}.person-hint{font-size:.73rem}.move button{width:34px}}
+@media(max-width:480px){.wrap{padding-top:20px}.panel{padding:12px}.person{grid-template-columns:24px 46px minmax(0,1fr) auto;gap:7px;padding:8px}.person img{width:46px;height:46px}.drag-handle{width:24px;font-size:1.15rem}.person-name{font-size:.95rem}.person-hint{font-size:.73rem}.move button{width:34px}}
 </style>
 </head>
 <body>
@@ -32,13 +32,13 @@ h1{font-family:serif;font-size:clamp(2rem,7vw,3rem);margin:7px 0;color:var(--red
 <p class="intro">人物カードを、古い年代から新しい年代へ並べよう！ 名前とイラスト、「したこと」のヒントが手がかり。答え合わせでは、年代と出来事も確認できるよ。</p>
 <section class="panel">
 <div class="topline"><strong>古い時代 → 新しい時代</strong><span class="count" id="round">第1回</span></div>
-<p class="help">右の ↑ ↓ ボタンでカードを動かせます。人物に関連する代表的な出来事の年代をもとに判定します。同じ年の人物は、どちらが先でも正解です。</p>
+<p class="help">カード左の ⠿ をつかんでドラッグするか、右の ↑ ↓ ボタンで順番を変えられます。人物に関連する代表的な出来事の年代をもとに判定します。同じ年の人物は、どちらが先でも正解です。</p>
 <div class="cards" id="cards" aria-live="polite"></div>
 <div class="actions"><button class="btn primary" id="check">順番をチェック</button><button class="btn secondary" id="reset">並べ直す</button></div>
 <div class="feedback" id="feedback" role="status"></div><button class="btn next" id="next">つぎの問題へ →</button>
 </section></main>
 <script>
-let roundNo=1,answerOrder=[],cards=[],checked=false;
+let roundNo=1,answerOrder=[],cards=[],checked=false,draggedId=null;
 const $=id=>document.getElementById(id);
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function newRound(){
@@ -50,14 +50,18 @@ function newRound(){
 function render(){
  const root=$('cards');root.innerHTML='';
  cards.forEach((p,i)=>{
-  const el=document.createElement('article');el.className='person';
+  const el=document.createElement('article');el.className='person';el.dataset.personId=String(p.id);
+  const handle=document.createElement('button');handle.type='button';handle.className='drag-handle';handle.textContent='⠿';handle.setAttribute('aria-label',p.name+'をドラッグして移動');handle.disabled=checked;
+  handle.addEventListener('pointerdown',e=>{if(checked)return;draggedId=String(p.id);el.classList.add('dragging');try{handle.setPointerCapture(e.pointerId)}catch(_){}});
+  handle.addEventListener('pointerup',e=>{if(draggedId===null)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.person');const from=cards.findIndex(x=>String(x.id)===draggedId);const to=target?cards.findIndex(x=>String(x.id)===target.dataset.personId):-1;if(from>=0&&to>=0&&from!==to){const [picked]=cards.splice(from,1);cards.splice(to,0,picked)}draggedId=null;render()});
+  handle.addEventListener('pointercancel',()=>{draggedId=null;render()});
   const img=document.createElement('img');img.src='../assets/people/'+p.icon+'.png';img.alt=p.name+'のイラスト';img.loading='lazy';img.onerror=()=>{img.style.display='none'};
   const info=document.createElement('div');const name=document.createElement('div');name.className='person-name';name.textContent=p.name;
   const hint=document.createElement('div');hint.className='person-hint';hint.textContent=p.hint;info.append(name,hint);
   const controls=document.createElement('div');controls.className='move';
   const up=document.createElement('button');up.textContent='↑';up.setAttribute('aria-label',p.name+'を上へ');up.disabled=i===0||checked;up.onclick=()=>move(i,-1);
   const down=document.createElement('button');down.textContent='↓';down.setAttribute('aria-label',p.name+'を下へ');down.disabled=i===cards.length-1||checked;down.onclick=()=>move(i,1);
-  controls.append(up,down);el.append(img,info,controls);root.append(el);
+  controls.append(up,down);el.append(handle,img,info,controls);root.append(el);
  });
 }
 function move(i,d){if(checked)return;[cards[i],cards[i+d]]=[cards[i+d],cards[i]];render()}
