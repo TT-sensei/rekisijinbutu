@@ -9,8 +9,8 @@
 
 ## 追加の歴史ゲーム
 
-- **[れきしクロノ](https://tt-sensei.github.io/rekisijinbutu/history-order/)**: 人物カードを古い年代から新しい年代へ並べ替えます。ドラッグ操作に加えて上下ボタンでも移動できます。答え合わせでは人物に関係する代表的な出来事を確認できます。
-- **[れきしマッチ](https://tt-sensei.github.io/rekisijinbutu/history-match/)**: 年表の出来事と人物を結びつけます。ドラッグ、人物からのタップ、出来事からのタップに対応し、共通の `people.js` と `history-order/dates.js` を利用します。
+- **[歴史のじゅんばん](https://tt-sensei.github.io/rekisijinbutu/history-order/)**: 人物カードを古い年代から新しい年代へ並べ替えます。ドラッグ操作に加えて上下ボタンでも移動できます。答え合わせでは人物に関係する代表的な出来事を確認できます。
+- **[人物と出来事をむすぼう](https://tt-sensei.github.io/rekisijinbutu/history-match/)**: 年表の出来事と人物を結びつけます。ドラッグ、人物からのタップ、出来事からのタップに対応し、共通の `people.js` と `history-order/dates.js` を利用します。
 
 どちらも追加ルートとして独立しており、既存のクイズや保存データには手を加えません。
 
