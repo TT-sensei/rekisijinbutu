@@ -283,6 +283,32 @@ body::before{
 .title-start-btn:active{transform:scale(.97)}
 .title-start-btn:hover{box-shadow:0 8px 40px rgba(240,100,53,.5),0 0 0 1px rgba(240,180,41,.4)}
 
+/* 追加学習モードも「調査をはじめる」と同じ大きさで縦に並べる */
+.title-game-links{
+  display:flex;flex-direction:column;align-items:stretch;gap:12px;
+  width:min(100%,460px);margin:14px auto 0;
+}
+.title-game-link{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;min-height:64px;padding:16px 24px;
+  border-radius:50px;border:1.5px solid var(--gold-dim);
+  background:var(--surface);color:var(--text);
+  font-family:var(--font-body);font-size:1.12rem;font-weight:900;
+  letter-spacing:.025em;text-align:center;text-decoration:none;
+  box-shadow:0 3px 14px rgba(0,0,0,.12);
+  transition:transform .15s,border-color .15s,background .15s;
+}
+.title-game-link:hover,.title-game-link:focus-visible{
+  border-color:var(--gold);background:var(--surface2);transform:translateY(-1px);
+}
+.title-game-link:active{transform:scale(.98)}
+.title-game-link .game-link-icon{font-size:1.4rem;line-height:1}
+.title-game-link:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media(max-width:560px){
+  .title-game-links{gap:10px;margin-top:12px}
+  .title-game-link{min-height:60px;padding:14px 16px;font-size:1.05rem}
+}
+
 #daily-status{
   margin-top:16px;
   font-size:.75rem;color:var(--subtext);
@@ -1278,11 +1304,13 @@ html{font-size:17px}
         調査をはじめる&nbsp; ›
       </button>
       <p id="daily-status"></p>
+      <div class="title-game-links" aria-label="歴史の学習モード">
+        <a class="title-game-link" href="history-match/"><span class="game-link-icon" aria-hidden="true">🧩</span><span>歴史結び　人物と出来事をむすぼう</span></a>
+        <a class="title-game-link" href="history-order/"><span class="game-link-icon" aria-hidden="true">↕️</span><span>歴史順番　歴史のじゅんばん</span></a>
+      </div>
       <div class="title-sub-links">
         <button class="title-sub-link" onclick="showCollection()">🏆 コレクションを見る</button>
         <button class="title-sub-link" id="review-open-btn" onclick="showReviewScreen()">🔁 まちがいノート <span id="review-count-badge" class="review-count-badge">0</span></button>
-        <a class="title-sub-link" href="history-match/" style="display:inline-flex;align-items:center;text-decoration:none">🧩 人物と出来事をむすぼう</a>
-        <a class="title-sub-link" href="history-order/" style="display:inline-flex;align-items:center;text-decoration:none">↕️ 歴史のじゅんばん</a>
       </div>
     </div>
     <div class="title-landmarks" aria-hidden="true"></div>
